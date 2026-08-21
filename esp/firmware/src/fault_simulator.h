@@ -1,62 +1,63 @@
-// ============================================================
-// GridSenti — Fault Simulator
-// ============================================================
-// ⚠ IMPORTANT:
-//   This module SIMULATES electrical telemetry values.
-//   No physical current or voltage sensors are connected.
-//   All values are mathematical approximations for testing
-//   the communication and detection pipeline.
-//   Do NOT connect to mains or high-voltage circuits.
-// ============================================================
+/**
+ * GridSenti — ESP8266 Dataset Replay Simulator
+ * ============================================
+ * Cycles through representative DWT energy samples from the Mendeley Fault dataset
+ * for NORMAL and HIF simulation modes.
+ */
 
-#pragma once
+#ifndef FAULT_SIMULATOR_H
+#define FAULT_SIMULATOR_H
+
+#include <Arduino.h>
 #include "config.h"
 
-namespace FaultSimulator {
+class FaultSimulator {
+private:
+    int normalIndex;
+    int hifIndex;
+    int autoCounter;
+    bool inAutoHifState;
 
-  enum class SimMode {
-    NORMAL,
-    POSSIBLE_HIF,
-  };
+public:
+    FaultSimulator() : normalIndex(0), hifIndex(0), autoCounter(0), inAutoHifState(false) {}
 
-  static uint32_t cycleCount = 0;
+    DatasetSample getNextSample(String currentMode, String &effectiveModeOut) {
+        DatasetSample sample;
 
-  /**
-   * Determine the current simulation mode based on cycle count.
-   * Every HIF_SIMULATE_EVERY_N cycles, a HIF event is simulated.
-   */
-  inline SimMode getCurrentMode() {
-    cycleCount++;
-    // Simulate a HIF event for 3 cycles out of every N
-    uint32_t phase = cycleCount % HIF_SIMULATE_EVERY_N;
-    if (phase >= (HIF_SIMULATE_EVERY_N - 3)) {
-      return SimMode::POSSIBLE_HIF;
+        if (currentMode == "HIF") {
+            sample = DATASET_HIF_SAMPLES[hifIndex];
+            hifIndex = (hifIndex + 1) % NUM_HIF_SAMPLES;
+            effectiveModeOut = "HIF";
+        }
+        else if (currentMode == "AUTO") {
+            // AUTO Mode: 6 NORMAL cycles, then 3 HIF cycles
+            autoCounter++;
+            if (!inAutoHifState && autoCounter >= 6) {
+                inAutoHifState = true;
+                autoCounter = 0;
+            } else if (inAutoHifState && autoCounter >= 3) {
+                inAutoHifState = false;
+                autoCounter = 0;
+            }
+
+            if (inAutoHifState) {
+                sample = DATASET_HIF_SAMPLES[hifIndex];
+                hifIndex = (hifIndex + 1) % NUM_HIF_SAMPLES;
+                effectiveModeOut = "HIF";
+            } else {
+                sample = DATASET_NORMAL_SAMPLES[normalIndex];
+                normalIndex = (normalIndex + 1) % NUM_NORMAL_SAMPLES;
+                effectiveModeOut = "NORMAL";
+            }
+        }
+        else { // Default to NORMAL
+            sample = DATASET_NORMAL_SAMPLES[normalIndex];
+            normalIndex = (normalIndex + 1) % NUM_NORMAL_SAMPLES;
+            effectiveModeOut = "NORMAL";
+        }
+
+        return sample;
     }
-    return SimMode::NORMAL;
-  }
+};
 
-  /** Simulated RMS current in Amperes (FAKE — not from sensors) */
-  inline float getCurrent(SimMode mode) {
-    if (mode == SimMode::POSSIBLE_HIF) return SIM_CURRENT_HIF;
-    return SIM_CURRENT_NORMAL;
-  }
-
-  /** Simulated RMS voltage in Volts (FAKE — not from sensors) */
-  inline float getVoltage(SimMode mode) {
-    if (mode == SimMode::POSSIBLE_HIF) return SIM_VOLTAGE_HIF;
-    return SIM_VOLTAGE_NORMAL;
-  }
-
-  /** Simulated waveform anomaly index [0.0–1.0] (FAKE) */
-  inline float getWaveformAnomaly(SimMode mode) {
-    if (mode == SimMode::POSSIBLE_HIF) return SIM_ANOMALY_HIF;
-    return SIM_ANOMALY_NORMAL;
-  }
-
-  /** Human-readable status string */
-  inline const char* getStatusString(SimMode mode) {
-    if (mode == SimMode::POSSIBLE_HIF) return "POSSIBLE_HIF";
-    return "NORMAL";
-  }
-
-} // namespace FaultSimulator
+#endif // FAULT_SIMULATOR_H

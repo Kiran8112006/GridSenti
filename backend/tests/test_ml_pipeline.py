@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-# Add backend to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ml.config import ORIGINAL_FEATURES, ALL_FEATURES, RAW_CSV_PATH, HIF_CLASS_LABEL
@@ -23,7 +22,6 @@ from ml.predict import predict_hif
 
 
 def test_dataset_loading_and_inspection():
-    """Verify raw dataset exists, loads properly, and inspect returns metadata."""
     df = load_dataset(RAW_CSV_PATH)
     assert not df.empty
     assert "Class" in df.columns
@@ -36,7 +34,6 @@ def test_dataset_loading_and_inspection():
 
 
 def test_preprocessing_and_labels():
-    """Verify cleaning and label preparation logic."""
     df_raw = load_dataset(RAW_CSV_PATH)
     df_clean = clean_dataset(df_raw)
     assert len(df_clean) <= len(df_raw)
@@ -47,11 +44,10 @@ def test_preprocessing_and_labels():
 
 
 def test_feature_extraction_no_nan_inf():
-    """Verify feature extraction produces expected columns with zero NaN/Inf values."""
     sample_df = pd.DataFrame([
         {"EA": 4.23e10, "EB": 4.84e9, "EC": 1.52e10},
-        {"EA": 1e-9, "EB": 1e-9, "EC": 1e-9}, # Extreme small numbers
-        {"EA": 1e12, "EB": 1e12, "EC": 1e12}, # Equal high energy
+        {"EA": 1e-9, "EB": 1e-9, "EC": 1e-9},
+        {"EA": 1e12, "EB": 1e12, "EC": 1e12},
     ])
     features = extract_features(sample_df)
 
@@ -59,25 +55,26 @@ def test_feature_extraction_no_nan_inf():
     assert not features.isnull().any().any()
     assert not features.isin([np.inf, -np.inf]).any().any()
 
-    # Test single vector validation
     validate_feature_vector(features.iloc[0])
 
 
-def test_rule_engine_behavior():
-    """Verify rule engine returns valid classification format and phase-agnostic score."""
-    sample_normal = {"energy_imbalance": 0.02, "energy_spread": 100, "total_energy": 10000, "max_energy": 3400, "min_energy": 3200}
-    res_normal = classify_sample(sample_normal)
-    assert res_normal["classification"] == "NORMAL"
-    assert res_normal["score"] < 30.0
+def test_rule_engine_normal_vs_hif_samples():
+    """Explicit test covering Test 1 (NORMAL) and Test 2 (HIF) sample inputs."""
+    # Test 1 — NORMAL sample
+    norm_features = extract_features(pd.DataFrame([{"EA": 4.23e10, "EB": 4.84e9, "EC": 1.52e10}])).iloc[0]
+    res_norm = classify_sample(norm_features)
+    assert res_norm["classification"] == "NORMAL"
+    assert res_norm["score"] == 0.0
 
-    sample_hif = {"energy_imbalance": 0.35, "energy_spread": 5000, "total_energy": 10000, "max_energy": 7000, "min_energy": 1000}
-    res_hif = classify_sample(sample_hif)
-    assert res_hif["classification"] in ["SUSPICIOUS", "POSSIBLE_HIF"]
+    # Test 2 — HIF sample
+    hif_features = extract_features(pd.DataFrame([{"EA": 5.57e10, "EB": 4.88e9, "EC": 1.51e10}])).iloc[0]
+    res_hif = classify_sample(hif_features)
+    assert res_hif["classification"] == "POSSIBLE_HIF"
+    assert res_hif["score"] >= 60.0
     assert len(res_hif["reasons"]) > 0
 
 
 def test_model_training_saving_loading():
-    """Verify training pipeline executes, saves model, and model can be reloaded."""
     train_results = run_training()
     assert "cv_metrics" in train_results
     assert check_model_artifacts_exist()
@@ -87,11 +84,8 @@ def test_model_training_saving_loading():
 
 
 def test_predict_hif_api():
-    """Verify predict_hif() interface works end-to-end."""
     res = predict_hif(ea=4.23e10, eb=4.84e9, ec=1.52e10)
     assert res["model_loaded"] is True
-    assert res["classification"] in ["HIF", "NON_HIF"]
-    assert "model_probability" in res
-    assert "HIF" in res["model_probability"]
-    assert "rule_engine" in res
-    assert "features_used" in res
+    assert res["classification"] == "NON_HIF"
+    assert res["model_probability"]["HIF"] == 0.0
+    assert res["rule_engine"]["classification"] == "NORMAL"

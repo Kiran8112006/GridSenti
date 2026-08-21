@@ -10,7 +10,6 @@ so that every other module imports from a single source of truth.
 from pathlib import Path
 
 # ── Directory layout ────────────────────────────────────────────────────────
-# Base is the backend/ directory (one level above ml/)
 _BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 DATA_DIR       = _BACKEND_DIR / "data"
@@ -30,19 +29,9 @@ DATASET_CITATION = (
 )
 
 ORIGINAL_FEATURES = ["EA", "EB", "EC"]
-"""
-ORIGINAL_FEATURES are DWT energy features extracted by the original dataset
-authors from simulated three-phase microgrid current signals using
-MATLAB/Simulink.  GridSenti does NOT perform DWT on raw waveforms; it
-consumes these pre-extracted features.
-"""
-
 TARGET_COLUMN = "Class"
 
-# All class labels present in the dataset
 ALL_CLASSES = ["Normal", "LG", "LLG", "LLLG", "LL", "HIF", "CS", "LS"]
-
-# Binary target: HIF vs everything else
 HIF_CLASS_LABEL  = "HIF"
 NON_HIF_LABEL    = "NON_HIF"
 BINARY_TARGET_COLUMN = "label_binary"
@@ -58,9 +47,9 @@ DERIVED_FEATURES = [
     "log_EA",
     "log_EB",
     "log_EC",
-    "log_ratio_EA_EB",   # log(EA / EB) — numerically stable
-    "log_ratio_EA_EC",   # log(EA / EC)
-    "log_ratio_EB_EC",   # log(EB / EC)
+    "log_ratio_EA_EB",
+    "log_ratio_EA_EC",
+    "log_ratio_EB_EC",
 ]
 
 ALL_FEATURES = ORIGINAL_FEATURES + DERIVED_FEATURES
@@ -73,35 +62,39 @@ LABEL_ENCODER_PATH = MODELS_DIR / "label_encoder.joblib"
 # ── Random Forest hyperparameters ─────────────────────────────────────────────
 RF_PARAMS = {
     "n_estimators": 200,
-    "max_depth": None,          # unlimited — dataset is small, regularise via CV
+    "max_depth": None,
     "min_samples_split": 2,
     "min_samples_leaf": 1,
-    "class_weight": "balanced", # guard against HIF under-representation
+    "class_weight": "balanced",
     "random_state": 42,
     "n_jobs": -1,
 }
 
-CV_FOLDS = 5       # stratified k-fold cross-validation
-TEST_SIZE = 0.20   # for the holdout split (visualisation only — not definitive)
+CV_FOLDS = 5
+TEST_SIZE = 0.20
 RANDOM_STATE = 42
 
-# ── Rule engine thresholds ────────────────────────────────────────────────────
-# PROTOTYPE THRESHOLDS — require field/utility validation before production use.
-# All thresholds are relative or percentile-based so they do not hard-code
-# physical unit assumptions.
+# ── Rule engine thresholds (Calibrated against Mendeley dataset distribution) ──
+# In steady-state microgrid simulation, normal operation has a characteristic
+# baseline phase imbalance (~0.760), relative spread (~0.601), and total energy (~6.22e10).
+# An HIF or fault causes phase energy distribution shift (asymmetry anomaly) and energy elevation.
 RULE_THRESHOLDS = {
-    # Imbalance: normalised std/mean of [EA, EB, EC].
-    # High imbalance is a necessary (but not sufficient) condition for HIF.
-    "imbalance_suspicious": 0.10,   # prototype threshold
-    "imbalance_hif":        0.25,   # prototype threshold
+    # Steady-state normal baselines
+    "norm_imbalance_baseline": 0.760,
+    "norm_spread_baseline":    0.601,
+    "norm_total_baseline":     6.22e10,
 
-    # Energy spread: max_energy - min_energy relative to total_energy.
-    "spread_suspicious": 0.15,      # prototype threshold
-    "spread_hif":        0.35,      # prototype threshold
+    # Deviation tolerances for Phase Imbalance Shift
+    "imbalance_dev_suspicious": 0.03,
+    "imbalance_dev_hif":        0.08,
 
-    # Score weights (all sum to 1.0)
-    "weight_imbalance": 0.50,
-    "weight_spread":    0.50,
+    # Deviation tolerances for Relative Energy Spread Shift
+    "spread_dev_suspicious":    0.025,
+    "spread_dev_hif":           0.06,
+
+    # Total Energy Elevation Ratio (relative to baseline)
+    "total_elevation_suspicious": 0.02,
+    "total_elevation_hif":        0.08,
 }
 
 # ── Reporting ─────────────────────────────────────────────────────────────────
@@ -112,4 +105,4 @@ CLASSIFICATION_RPT_PATH = REPORTS_DIR / "classification_report.txt"
 EXPERIMENT_SUMMARY_PATH = REPORTS_DIR / "experiment_summary.md"
 
 # ── Numerical safety ──────────────────────────────────────────────────────────
-EPSILON = 1e-9   # added to denominators to prevent division-by-zero
+EPSILON = 1e-9

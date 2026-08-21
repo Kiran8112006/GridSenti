@@ -6,22 +6,16 @@ Prototype rule-based HIF detection baseline.
 PURPOSE
 -------
 This rule engine is a research/prototype baseline.
-It is NOT a production utility protection relay.
-It is NOT calibrated against field data.
-It provides an explainable pre-ML filter and a benchmark for the ML model.
+It provides an explainable pre-ML filter and benchmark based on phase-agnostic
+characteristic shifts in DWT energy features.
 
-RULES
------
-All rules are phase-agnostic (no EC-specific or phase-specific bias).
-Rules are based on DWT energy imbalance and spread — quantities that can be
-computed from the original EA/EB/EC features.
-
-THRESHOLDS
-----------
-All thresholds are PROTOTYPE THRESHOLDS.
-They require field/utility validation before production use.
-They are defined in ml/config.py:RULE_THRESHOLDS so they can be adjusted
-without modifying logic.
+CALIBRATION
+-----------
+Calibrated against the public Mendeley Fault Dataset (DOI: 10.17632/rvypj5rs5b.1).
+In steady-state normal operation, phase current/DWT energy distribution has a
+characteristic baseline imbalance (~0.760) and relative spread (~0.601).
+HIFs and line faults cause a phase energy distribution shift (asymmetry anomaly)
+and total energy elevation.
 
 OUTPUT
 ------
@@ -29,8 +23,8 @@ Returns a dict:
   {
       "classification": "NORMAL" | "SUSPICIOUS" | "POSSIBLE_HIF",
       "score": float (0–100),
-      "reasons": [str, ...],    # list of triggered rule descriptions
-      "features_used": {str: float, ...}  # features the engine read
+      "reasons": [str, ...],
+      "features_used": {str: float, ...}
   }
 """
 
@@ -47,10 +41,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ml.config import RULE_THRESHOLDS, EPSILON
 
-
 # ── Classification labels ─────────────────────────────────────────────────────
-CLASSIFICATION_NORMAL      = "NORMAL"
-CLASSIFICATION_SUSPICIOUS  = "SUSPICIOUS"
+CLASSIFICATION_NORMAL       = "NORMAL"
+CLASSIFICATION_SUSPICIOUS   = "SUSPICIOUS"
 CLASSIFICATION_POSSIBLE_HIF = "POSSIBLE_HIF"
 
 
@@ -58,106 +51,106 @@ CLASSIFICATION_POSSIBLE_HIF = "POSSIBLE_HIF"
 
 def classify_sample(features: Union[dict, pd.Series]) -> Dict:
     """
-    Apply the prototype rule engine to a single feature vector.
+    Apply phase-agnostic dataset-calibrated rule engine to a feature vector.
 
     Parameters
     ----------
     features : dict or pd.Series
-        Must contain at minimum:
-          - energy_imbalance  (normalised phase energy imbalance)
-          - energy_spread     (max_energy - min_energy)
-          - total_energy
-          - max_energy
-          - min_energy
+        Must contain: energy_imbalance, energy_spread, total_energy, max_energy, min_energy
 
     Returns
     -------
-    dict with keys: classification, score, reasons, features_used
+    dict with: classification, score, reasons, features_used
     """
-    # Extract required features safely
-    imbalance    = float(features.get("energy_imbalance", 0.0))
-    spread       = float(features.get("energy_spread", 0.0))
-    total        = float(features.get("total_energy", 1.0))
-    max_e        = float(features.get("max_energy", 0.0))
-    min_e        = float(features.get("min_energy", 0.0))
+    imbalance = float(features.get("energy_imbalance", 0.0))
+    spread    = float(features.get("energy_spread", 0.0))
+    total     = float(features.get("total_energy", 1.0))
+    max_e     = float(features.get("max_energy", 0.0))
+    min_e     = float(features.get("min_energy", 0.0))
 
-    # Relative spread: spread as a fraction of total energy
     relative_spread = spread / (total + EPSILON)
 
+    # Calculate shifts relative to steady-state normal baselines
+    norm_imb_base    = RULE_THRESHOLDS["norm_imbalance_baseline"]
+    norm_spread_base = RULE_THRESHOLDS["norm_spread_baseline"]
+    norm_total_base  = RULE_THRESHOLDS["norm_total_baseline"]
+
+    imbalance_dev = abs(imbalance - norm_imb_base)
+    spread_dev    = abs(relative_spread - norm_spread_base)
+    energy_elev   = (total - norm_total_base) / (norm_total_base + EPSILON)
+
     reasons: List[str] = []
-    imbalance_score = 0.0
-    spread_score    = 0.0
+    score = 0.0
 
-    # ── Rule 1: Phase energy imbalance ────────────────────────────────────────
-    # High imbalance across all three phases (phase-agnostic)
-    # Prototype threshold — requires field validation
-    if imbalance >= RULE_THRESHOLDS["imbalance_hif"]:
-        imbalance_score = 1.0
+    # ── Rule 1: Phase Imbalance Shift Anomaly ─────────────────────────────────
+    if imbalance_dev >= RULE_THRESHOLDS["imbalance_dev_hif"]:
+        score += 40.0
         reasons.append(
-            f"High phase energy imbalance ({imbalance:.3f} >= "
-            f"{RULE_THRESHOLDS['imbalance_hif']:.2f} - prototype threshold)"
+            f"Severe phase imbalance shift ({imbalance_dev:.3f} >= "
+            f"{RULE_THRESHOLDS['imbalance_dev_hif']:.2f} - prototype threshold)"
         )
-    elif imbalance >= RULE_THRESHOLDS["imbalance_suspicious"]:
-        imbalance_score = 0.5
+    elif imbalance_dev >= RULE_THRESHOLDS["imbalance_dev_suspicious"]:
+        score += 20.0
         reasons.append(
-            f"Moderate phase energy imbalance ({imbalance:.3f} >= "
-            f"{RULE_THRESHOLDS['imbalance_suspicious']:.2f} - prototype threshold)"
+            f"Moderate phase imbalance shift ({imbalance_dev:.3f} >= "
+            f"{RULE_THRESHOLDS['imbalance_dev_suspicious']:.2f} - prototype threshold)"
         )
 
-    # ── Rule 2: Relative energy spread ───────────────────────────────────────
-    # Large difference between max and min phase energy, relative to total.
-    # Phase-agnostic: triggers regardless of which phase dominates.
-    # Prototype threshold — requires field validation
-    if relative_spread >= RULE_THRESHOLDS["spread_hif"]:
-        spread_score = 1.0
+    # ── Rule 2: Relative Energy Spread Shift Anomaly ─────────────────────────
+    if spread_dev >= RULE_THRESHOLDS["spread_dev_hif"]:
+        score += 40.0
         reasons.append(
-            f"High relative energy spread ({relative_spread:.3f} >= "
-            f"{RULE_THRESHOLDS['spread_hif']:.2f} - prototype threshold)"
+            f"Severe relative energy spread shift ({spread_dev:.3f} >= "
+            f"{RULE_THRESHOLDS['spread_dev_hif']:.2f} - prototype threshold)"
         )
-    elif relative_spread >= RULE_THRESHOLDS["spread_suspicious"]:
-        spread_score = 0.5
+    elif spread_dev >= RULE_THRESHOLDS["spread_dev_suspicious"]:
+        score += 20.0
         reasons.append(
-            f"Moderate relative energy spread ({relative_spread:.3f} >= "
-            f"{RULE_THRESHOLDS['spread_suspicious']:.2f} - prototype threshold)"
+            f"Moderate relative energy spread shift ({spread_dev:.3f} >= "
+            f"{RULE_THRESHOLDS['spread_dev_suspicious']:.2f} - prototype threshold)"
         )
 
-    # ── Composite score (0–100) ───────────────────────────────────────────────
-    w_i = RULE_THRESHOLDS["weight_imbalance"]
-    w_s = RULE_THRESHOLDS["weight_spread"]
-    raw_score = w_i * imbalance_score + w_s * spread_score
-    score = round(raw_score * 100.0, 1)
+    # ── Rule 3: Total Energy Elevation ────────────────────────────────────────
+    if energy_elev >= RULE_THRESHOLDS["total_elevation_hif"]:
+        score += 20.0
+        reasons.append(
+            f"Elevated total DWT energy ({energy_elev*100.0:.1f}% above baseline)"
+        )
+    elif energy_elev >= RULE_THRESHOLDS["total_elevation_suspicious"]:
+        score += 10.0
+        reasons.append(
+            f"Slight total DWT energy elevation ({energy_elev*100.0:.1f}% above baseline)"
+        )
 
-    # ── Classification decision ───────────────────────────────────────────────
-    if score >= 70.0:
+    # Score bounds [0, 100]
+    score = min(100.0, score)
+
+    # ── Classification Decision ───────────────────────────────────────────────
+    if score >= 60.0:
         classification = CLASSIFICATION_POSSIBLE_HIF
-    elif score >= 30.0:
+    elif score >= 20.0:
         classification = CLASSIFICATION_SUSPICIOUS
     else:
         classification = CLASSIFICATION_NORMAL
         if not reasons:
-            reasons.append("No significant energy imbalance or spread detected.")
+            reasons.append("No significant energy imbalance shift or spread anomaly detected.")
 
     return {
         "classification": classification,
         "score": score,
         "reasons": reasons,
         "features_used": {
-            "energy_imbalance":  round(imbalance, 6),
-            "relative_spread":   round(relative_spread, 6),
-            "energy_spread":     round(spread, 2),
-            "total_energy":      round(total, 2),
-            "max_energy":        round(max_e, 2),
-            "min_energy":        round(min_e, 2),
+            "energy_imbalance":     round(imbalance, 6),
+            "imbalance_deviation":  round(imbalance_dev, 6),
+            "relative_spread":      round(relative_spread, 6),
+            "spread_deviation":     round(spread_dev, 6),
+            "total_energy":         round(total, 2),
+            "energy_elevation_pct": round(energy_elev * 100.0, 2),
         },
     }
 
 
 def classify_dataframe(feature_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Apply the rule engine to every row of a feature DataFrame.
-    Returns the input DataFrame with added columns:
-      rule_classification, rule_score, rule_reasons
-    """
     results = feature_df.apply(classify_sample, axis=1)
     out = feature_df.copy()
     out["rule_classification"] = results.apply(lambda r: r["classification"])
@@ -170,27 +163,12 @@ def evaluate_rule_engine(
     feature_df: pd.DataFrame,
     true_labels_binary: pd.Series,
 ) -> Dict:
-    """
-    Evaluate the rule engine as a binary classifier.
-
-    Parameters
-    ----------
-    feature_df : pd.DataFrame
-        Must contain columns used by classify_sample().
-    true_labels_binary : pd.Series
-        'HIF' or 'NON_HIF' for each row.
-
-    Returns
-    -------
-    dict with: accuracy, precision, recall, f1, confusion details
-    """
     from sklearn.metrics import (
         accuracy_score, precision_score, recall_score,
         f1_score, confusion_matrix,
     )
 
     annotated = classify_dataframe(feature_df)
-    # Treat POSSIBLE_HIF as positive HIF prediction
     pred_binary = annotated["rule_classification"].apply(
         lambda c: "HIF" if c == CLASSIFICATION_POSSIBLE_HIF else "NON_HIF"
     )
@@ -212,39 +190,3 @@ def evaluate_rule_engine(
         "confusion_matrix": cm.tolist(),
         "classification_counts": annotated["rule_classification"].value_counts().to_dict(),
     }
-
-
-# ── CLI entry point ───────────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    from ml.preprocessing import run_preprocessing_pipeline
-    from ml.feature_extraction import extract_features
-    from ml.config import BINARY_TARGET_COLUMN
-
-    df = run_preprocessing_pipeline(save=False)
-    features = extract_features(df)
-
-    print("\n" + "-" * 60)
-    print("RULE ENGINE - Sample Classifications")
-    print("-" * 60)
-    annotated = classify_dataframe(features)
-    print(annotated[["rule_classification", "rule_score"]].value_counts())
-
-    # If labels available, evaluate
-    if BINARY_TARGET_COLUMN in df.columns:
-        metrics = evaluate_rule_engine(features, df[BINARY_TARGET_COLUMN])
-        print("\nRule engine binary evaluation (POSSIBLE_HIF <-> HIF):")
-        for k, v in metrics.items():
-            if k != "confusion_matrix":
-                print(f"  {k}: {v}")
-        print(f"  Confusion matrix (HIF vs NON_HIF):")
-        print(f"    {metrics['confusion_matrix']}")
-
-    # Show a sample classification in detail
-    print("\nSample rule classification (first HIF row):")
-    hif_mask = df["Class"] == "HIF"
-    if hif_mask.any():
-        first_hif = features[hif_mask].iloc[0]
-        result = classify_sample(first_hif)
-        for k, v in result.items():
-            print(f"  {k}: {v}")

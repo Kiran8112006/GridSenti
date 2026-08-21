@@ -16,6 +16,7 @@ import type {
 
 export const MOCK_NODES: MonitoringNode[] = [
   {
+    nodeId: "GS-NODE-001",
     id: "GS-NODE-001",
     name: "Node Alpha",
     latitude: 28.6139,
@@ -26,6 +27,7 @@ export const MOCK_NODES: MonitoringNode[] = [
     firmwareVersion: "0.1.0",
   },
   {
+    nodeId: "GS-NODE-002",
     id: "GS-NODE-002",
     name: "Node Beta",
     latitude: 28.6229,
@@ -36,6 +38,7 @@ export const MOCK_NODES: MonitoringNode[] = [
     firmwareVersion: "0.1.0",
   },
   {
+    nodeId: "GS-NODE-003",
     id: "GS-NODE-003",
     name: "Node Gamma",
     latitude: 28.635,
@@ -46,6 +49,7 @@ export const MOCK_NODES: MonitoringNode[] = [
     firmwareVersion: "0.1.0",
   },
   {
+    nodeId: "GS-NODE-004",
     id: "GS-NODE-004",
     name: "Node Delta",
     latitude: 28.641,

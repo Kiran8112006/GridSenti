@@ -1,12 +1,6 @@
 // ============================================================
 // GridSenti — Core TypeScript Types
 // ============================================================
-// NOTE: voltage/current fields in these types represent
-// SIMULATED readings for the current prototype.
-// No physical electrical sensors are connected.
-// ============================================================
-
-// ── Node Status ──────────────────────────────────────────────
 
 export type NodeStatus = "ONLINE" | "WARNING" | "OFFLINE" | "UNKNOWN";
 
@@ -24,61 +18,48 @@ export type SystemState = "NOMINAL" | "DEGRADED" | "CRITICAL";
 // ── Monitoring Node ──────────────────────────────────────────
 
 export interface MonitoringNode {
-  /** Unique node identifier, e.g. GS-NODE-001 */
-  id: string;
+  nodeId?: string;
+  id?: string;
   name: string;
-  latitude: number;
-  longitude: number;
-  status: NodeStatus;
-  /** ISO 8601 timestamp of last heartbeat */
-  lastHeartbeat: string;
   location?: string;
-  /** Firmware version string */
+  feeder?: string;
+  latitude?: number;
+  longitude?: number;
+  status: NodeStatus;
+  lastHeartbeat?: string | null;
+  lastDetection?: string | null;
+  latestTelemetry?: any;
+  latestDetectionResult?: any;
   firmwareVersion?: string;
 }
 
 // ── Sensor Reading ───────────────────────────────────────────
 
-/**
- * A single raw reading from a monitoring node.
- * NOTE: All values are SIMULATED in the current prototype.
- */
 export interface SensorReading {
   nodeId: string;
   timestamp: string;
-  /** Simulated RMS current in Amperes */
   current: number;
-  /** Simulated RMS voltage in Volts */
   voltage: number;
-  /** Simulated waveform anomaly index [0.0 – 1.0] */
   waveformAnomaly: number;
-  /** Simulated frequency in Hz */
   frequency?: number;
-  /** Simulated power factor */
   powerFactor?: number;
 }
 
 // ── Telemetry Packet ─────────────────────────────────────────
 
-/**
- * Full telemetry payload sent by an edge node (ESP8266).
- * NOTE: All electrical values are SIMULATED.
- */
 export interface TelemetryPacket {
   nodeId: string;
   timestamp: string;
-  /** Simulated RMS current in Amperes */
+  currentA?: number;
+  voltageV?: number;
+  anomalyIdx?: number;
+  rssiDbm?: number;
   current: number;
-  /** Simulated RMS voltage in Volts */
   voltage: number;
-  /** Simulated waveform anomaly index [0.0 – 1.0] */
   waveformAnomaly: number;
-  status: FaultStatus;
-  /** Simulated signal-to-noise ratio */
+  status?: FaultStatus;
   snr?: number;
-  /** Firmware version of the reporting node */
   firmwareVersion?: string;
-  /** RSSI of the node's Wi-Fi connection */
   rssi?: number;
 }
 
@@ -88,14 +69,11 @@ export interface FaultEvent {
   id: string;
   nodeId: string;
   type: "HIF" | "OVERCURRENT" | "UNDERVOLTAGE" | "ANOMALY" | "UNKNOWN";
-  /** Detection confidence [0.0 – 1.0] */
   confidence: number;
   timestamp: string;
   status: FaultStatus;
   description?: string;
-  /** Estimated fault latitude (future localization) */
   estimatedLatitude?: number;
-  /** Estimated fault longitude (future localization) */
   estimatedLongitude?: number;
 }
 
@@ -105,9 +83,7 @@ export interface HIFDetection {
   id: string;
   nodeId: string;
   timestamp: string;
-  /** Detection confidence [0.0 – 1.0] */
   confidence: number;
-  /** Raw anomaly features used by the detector */
   features: {
     currentThd?: number;
     voltageThd?: number;
@@ -131,6 +107,16 @@ export interface Alert {
   relatedFaultId?: string;
 }
 
+// ── Event Timeline Log Item ──────────────────────────────────
+
+export interface EventLogItem {
+  id: string;
+  timestamp: string;
+  nodeId: string | null;
+  type: string;
+  message: string;
+}
+
 // ── System Status ────────────────────────────────────────────
 
 export interface SystemStatus {
@@ -140,7 +126,7 @@ export interface SystemStatus {
   warningNodes: number;
   offlineNodes: number;
   activeAlerts: number;
-  lastUpdated: string;
+  lastUpdated?: string;
 }
 
 // ── API Responses ────────────────────────────────────────────
@@ -148,11 +134,4 @@ export interface SystemStatus {
 export interface HealthCheckResponse {
   status: string;
   service: string;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
 }

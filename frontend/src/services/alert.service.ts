@@ -1,26 +1,21 @@
 // ============================================================
 // GridSenti — Alert Service
-// TODO: Implement real API calls in later phase
+// Calls GET /api/alerts
 // ============================================================
 
+import { apiGet } from "./api.service";
+import { APP_CONFIG } from "@/config/app.config";
+import { MOCK_ALERTS } from "@/lib/mock-data";
 import type { Alert } from "@/types";
 
-/**
- * Fetch all unacknowledged alerts.
- * TODO: Call GET /api/alerts?acknowledged=false
- */
 export async function getActiveAlerts(): Promise<Alert[]> {
-  // TODO: return apiGet<Alert[]>("/alerts?acknowledged=false");
-  throw new Error("[alert.service] getActiveAlerts — not implemented yet");
-}
-
-/**
- * Acknowledge an alert.
- * TODO: Call PATCH /api/alerts/:id/acknowledge
- */
-export async function acknowledgeAlert(id: string): Promise<void> {
-  // TODO: return apiPost(`/alerts/${id}/acknowledge`, {});
-  throw new Error(
-    `[alert.service] acknowledgeAlert(${id}) — not implemented yet`,
-  );
+  try {
+    return await apiGet<Alert[]>("/alerts");
+  } catch (error) {
+    if (APP_CONFIG.useMockFallback) {
+      console.warn("[alert.service] Backend disconnected. Explicit mock fallback enabled.");
+      return MOCK_ALERTS;
+    }
+    throw error;
+  }
 }

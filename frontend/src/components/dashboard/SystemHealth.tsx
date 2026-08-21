@@ -3,9 +3,15 @@ import { systemStateColor } from "@/utils";
 
 interface SystemHealthProps {
   status: SystemStatus;
+  backendStatus?: "CONNECTED" | "DISCONNECTED";
+  mlModelStatus?: "READY" | "NOT_READY";
 }
 
-export default function SystemHealth({ status }: SystemHealthProps) {
+export default function SystemHealth({
+  status,
+  backendStatus = "DISCONNECTED",
+  mlModelStatus = "READY",
+}: SystemHealthProps) {
   const uptimePct =
     status.totalNodes > 0
       ? Math.round((status.onlineNodes / status.totalNodes) * 100)
@@ -36,7 +42,7 @@ export default function SystemHealth({ status }: SystemHealthProps) {
           </div>
           <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full ${
+              className={`h-full rounded-full transition-all duration-500 ${
                 uptimePct >= 75
                   ? "bg-emerald-500"
                   : uptimePct >= 50
@@ -68,10 +74,33 @@ export default function SystemHealth({ status }: SystemHealthProps) {
           ))}
         </div>
 
-        {/* Backend health placeholder */}
-        <div className="flex items-center justify-between text-xs border-t border-slate-700/60 pt-3">
-          <span className="text-slate-500">Backend API</span>
-          <span className="text-slate-600 italic">Not connected (skeleton)</span>
+        {/* Backend & ML Health */}
+        <div className="flex flex-col gap-1.5 text-xs border-t border-slate-700/60 pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400">Backend API</span>
+            <span
+              className={`font-mono font-semibold ${
+                backendStatus === "CONNECTED"
+                  ? "text-emerald-400"
+                  : "text-red-400"
+              }`}
+            >
+              {backendStatus === "CONNECTED" ? "🟢 ONLINE" : "🔴 DISCONNECTED"}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400">ML Engine (Random Forest)</span>
+            <span
+              className={`font-mono font-semibold ${
+                mlModelStatus === "READY"
+                  ? "text-emerald-400"
+                  : "text-amber-400"
+              }`}
+            >
+              {mlModelStatus === "READY" ? "🟢 LOADED & ACTIVE" : "🟡 PENDING"}
+            </span>
+          </div>
         </div>
       </div>
     </section>

@@ -2,7 +2,6 @@ import type { MonitoringNode } from "@/types";
 import {
   nodeStatusColor,
   nodeStatusDot,
-  nodeStatusEmoji,
   timeAgo,
 } from "@/utils";
 
@@ -11,12 +10,16 @@ interface NodeStatusProps {
 }
 
 export default function NodeStatus({ node }: NodeStatusProps) {
+  const displayId = node.nodeId || node.id || "GS-NODE-XXX";
+  const lat = node.latitude ?? 28.635;
+  const lng = node.longitude ?? 77.225;
+
   return (
     <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 flex flex-col gap-2 hover:border-slate-600 transition-colors">
       {/* Header row */}
       <div className="flex items-center justify-between">
         <span className="text-slate-100 font-mono text-sm font-semibold">
-          {node.id}
+          {displayId}
         </span>
         <div className="flex items-center gap-1.5">
           <span
@@ -31,11 +34,11 @@ export default function NodeStatus({ node }: NodeStatusProps) {
       {/* Name */}
       <div className="text-slate-400 text-xs">{node.name}</div>
 
-      {/* Location */}
-      {node.location && (
+      {/* Location / Feeder */}
+      {(node.location || node.feeder) && (
         <div className="text-slate-500 text-xs flex items-center gap-1">
           <span>📍</span>
-          <span>{node.location}</span>
+          <span>{node.location ?? node.feeder}</span>
         </div>
       )}
 
@@ -43,13 +46,13 @@ export default function NodeStatus({ node }: NodeStatusProps) {
       <div className="text-slate-500 text-xs border-t border-slate-700/60 pt-2 mt-1 flex justify-between">
         <span>Last heartbeat</span>
         <span className="text-slate-400 font-mono">
-          {timeAgo(node.lastHeartbeat)}
+          {node.lastHeartbeat ? timeAgo(node.lastHeartbeat) : "Never"}
         </span>
       </div>
 
-      {/* Coordinates placeholder */}
+      {/* Coordinates */}
       <div className="text-slate-600 text-xs font-mono">
-        {node.latitude.toFixed(4)}, {node.longitude.toFixed(4)}
+        {lat.toFixed(4)}, {lng.toFixed(4)}
       </div>
     </div>
   );
