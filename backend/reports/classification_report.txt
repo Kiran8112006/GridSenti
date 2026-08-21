@@ -1,0 +1,147 @@
+GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=GridSenti - HIF Detection Baseline: Classification Report
+Generated: 2026-08-22T00:32:17.990434
+=
+
+NOTE: Holdout split (80/20) shown below is for illustration.
+      Definitive metric = 5-Fold Stratified CV.
+
+Cross-Validation Results (primary):
+  CV Accuracy    : 0.9917 +/- 0.0167
+  CV Precision   : 0.9920 (weighted)
+  CV Recall      : 0.9917 (weighted)
+  CV F1          : 0.9909 (weighted)
+  HIF Precision  : 1.0000
+  HIF Recall     : 0.9333  <- safety metric
+  HIF F1         : 0.9600
+
+Per-fold accuracies: [1.0, 0.9583, 1.0, 1.0, 1.0]
+
+------------------------------------------------------------
+Holdout (80/20) Classification Report (illustration only):
+------------------------------------------------------------
+              precision    recall  f1-score   support
+
+         HIF       1.00      1.00      1.00         3
+     NON_HIF       1.00      1.00      1.00        21
+
+    accuracy                           1.00        24
+   macro avg       1.00      1.00      1.00        24
+weighted avg       1.00      1.00      1.00        24

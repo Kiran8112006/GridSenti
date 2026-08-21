@@ -1,44 +1,88 @@
-# GridSenti Backend
+# GridSenti — Backend API & Machine Learning Engine
 
-FastAPI-based backend for the GridSenti grid safety monitoring system.
+FastAPI backend service and HIF Machine Learning / Rule Engine for GridSenti.
 
-## Setup
+---
 
-```bash
-# 1. Create virtual environment
-python -m venv .venv
+## Directory Structure
 
-# 2. Activate (Windows PowerShell)
-.\.venv\Scripts\Activate.ps1
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Copy environment template
-copy .env.example .env
-
-# 5. Start development server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+backend/
+├── app/
+│   ├── main.py                     # FastAPI entry point
+│   ├── api/routes.py               # API endpoints
+│   ├── detection/
+│   │   └── hif_detector.py         # Application layer wrapper -> ml/predict.py
+│   └── ...
+│
+├── data/
+│   ├── raw/
+│   │   └── Fault_dataset.csv       # Real Mendeley HIF dataset (DOI: 10.17632/rvypj5rs5b.1)
+│   ├── processed/
+│   │   └── processed_dataset.csv   # Preprocessed & labelled dataset
+│   └── README.md
+│
+├── ml/
+│   ├── config.py                   # Paths, thresholds, hyperparams
+│   ├── preprocessing.py            # Dataset loading, duplicate inspection, cleaning
+│   ├── feature_extraction.py       # Safe feature derivation (ratios, imbalance)
+│   ├── rule_engine.py              # Phase-agnostic prototype rule baseline
+│   ├── train.py                    # Stratified 5-Fold CV & Random Forest training
+│   ├── evaluate.py                 # Report generation (metrics, confusion matrix)
+│   ├── predict.py                  # Single & batch inference API
+│   └── model_utils.py              # Model persistence (joblib)
+│
+├── models/
+│   ├── hif_random_forest.joblib    # Trained Random Forest classifier
+│   └── feature_list.txt            # Order of input features for inference
+│
+├── reports/
+│   ├── classification_report.txt   # Detailed metrics report
+│   ├── confusion_matrix.png        # Visualization of holdout predictions
+│   ├── feature_importance.png      # Feature ranking plot
+│   ├── feature_importance.csv      # Feature Gini importance values
+│   └── experiment_summary.md       # Complete methodology & results documentation
+│
+└── tests/
+    └── test_ml_pipeline.py         # Pytest suite for ML engine & backend
 ```
 
-## Endpoints (Skeleton)
+---
 
-| Method | Path          | Description   |
-|--------|---------------|---------------|
-| GET    | /             | Root welcome  |
-| GET    | /api/health   | Health check  |
-| GET    | /docs         | Swagger UI    |
-| GET    | /redoc        | ReDoc UI      |
+## Execution Workflow Commands
 
-## Planned Endpoints
+### 1. Install Dependencies
+```powershell
+# Required for Python 3.14 (uses pre-built binary wheels)
+pip install --prefer-binary -r requirements.txt
+```
 
-- `POST /api/telemetry` — Receive telemetry from ESP nodes
-- `GET  /api/nodes` — List all monitoring nodes
-- `GET  /api/faults` — List fault events
-- `GET  /api/alerts` — List active alerts
-- `GET  /api/hif/status` — HIF detection status
+### 2. Preprocess & Inspect Dataset
+```powershell
+python -m ml.preprocessing
+```
 
-## ⚠ Safety Note
+### 3. Train Random Forest Classifier
+```powershell
+python -m ml.train
+```
 
-No real electrical measurements are performed.
-All telemetry is simulated by the ESP8266 prototype node.
+### 4. Evaluate & Generate Reports
+```powershell
+python -m ml.evaluate
+```
+
+### 5. Run Prediction Test
+```powershell
+python -m ml.predict
+```
+
+### 6. Run Test Suite
+```powershell
+pytest tests/
+```
+
+### 7. Run FastAPI Server
+```powershell
+uvicorn app.main:app --reload --port 8000
+```
