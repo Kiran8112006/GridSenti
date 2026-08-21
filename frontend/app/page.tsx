@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
 import StatusCard from "@/components/dashboard/StatusCard";
 import NodeGrid from "@/components/nodes/NodeGrid";
 import AlertPanel from "@/components/alerts/AlertPanel";
@@ -10,58 +9,13 @@ import EventTimeline from "@/components/dashboard/EventTimeline";
 import SystemHealth from "@/components/dashboard/SystemHealth";
 import TelemetryCard from "@/components/telemetry/TelemetryCard";
 
-import { getAllNodes } from "@/services/node.service";
-import { getActiveAlerts } from "@/services/alert.service";
-import { getRecentEvents, getLatestSystemDetection } from "@/services/fault.service";
+import { useGridSentiData } from "@/hooks/useGridSentiData";
 import { APP_CONFIG } from "@/config/app.config";
-import type { MonitoringNode, Alert, EventLogItem, TelemetryPacket, SystemStatus } from "@/types";
+import type { TelemetryPacket, SystemStatus } from "@/types";
 
 export default function DashboardPage() {
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [nodes, setNodes] = useState<MonitoringNode[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [events, setEvents] = useState<EventLogItem[]>([]);
-  const [latestDetection, setLatestDetection] = useState<any>(null);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-
-  // Polling ref to prevent concurrent overlapping fetches
-  const isPollingRef = useRef<boolean>(false);
-
-  const fetchLiveData = async () => {
-    if (isPollingRef.current) return;
-    isPollingRef.current = true;
-
-    try {
-      const [fetchedNodes, fetchedAlerts, fetchedEvents, fetchedDetection] =
-        await Promise.all([
-          getAllNodes(),
-          getActiveAlerts(),
-          getRecentEvents(),
-          getLatestSystemDetection(),
-        ]);
-
-      setNodes(fetchedNodes);
-      setAlerts(fetchedAlerts);
-      setEvents(fetchedEvents);
-      setLatestDetection(fetchedDetection);
-      setIsConnected(true);
-      setLastUpdated(new Date().toLocaleTimeString());
-    } catch (error) {
-      console.warn("[Dashboard] Backend disconnected:", error);
-      setIsConnected(false);
-    } finally {
-      isPollingRef.current = false;
-    }
-  };
-
-  useEffect(() => {
-    // Initial fetch
-    fetchLiveData();
-
-    // 2-second polling loop
-    const interval = setInterval(fetchLiveData, APP_CONFIG.pollingIntervalMs);
-    return () => clearInterval(interval);
-  }, []);
+  const { nodes, alerts, events, latestDetection, isConnected, lastUpdated } =
+    useGridSentiData();
 
   // Compute live system metrics
   const totalNodes = nodes.length;
