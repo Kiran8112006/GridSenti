@@ -1,0 +1,82 @@
+# ============================================================
+# GridSenti — Root .gitignore
+# ============================================================
+
+# ── Node / Frontend ─────────────────────────────────────────
+node_modules/
+.next/
+.next-build/
+out/
+dist/
+build/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ── Python / Backend ────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+.Python
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ── PlatformIO / ESP ────────────────────────────────────────
+esp/.pio/
+esp/firmware/.pio/
+.pio/
+pio_packages/
+
+# ── Environment & Secrets ───────────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+!*.env.example
+
+# ── IDE / Editor ────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.user
+*.code-workspace
+.vs/
+
+# ── OS ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# ── Logs ────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Misc ────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.orig
+.cache/
