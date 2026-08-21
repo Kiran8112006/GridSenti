@@ -113,6 +113,7 @@ export const MOCK_ALERTS: Alert[] = [
     id: "ALT-001",
     nodeId: "GS-NODE-003",
     severity: "WARNING",
+    type: "POSSIBLE_HIF",
     message:
       "Possible HIF detected near GS-NODE-003. Waveform anomaly index: 0.82",
     timestamp: new Date(Date.now() - 60_000).toISOString(),

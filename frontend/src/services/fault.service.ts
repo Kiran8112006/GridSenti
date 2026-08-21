@@ -5,9 +5,9 @@
 
 import { apiGet } from "./api.service";
 import { APP_CONFIG } from "@/config/app.config";
-import type { EventLogItem, HIFDetection } from "@/types";
+import type { EventLogItem, FaultClassification, RiskAnalysis, LocalizationInfo, ExplanationInfo } from "@/types";
 
-export async function getRecentEvents(): Promise<EventLogItem[]> {
+export async function getRecentEvents(limit: number = 50): Promise<EventLogItem[]> {
   try {
     const rawEvents = await apiGet<
       Array<{
@@ -17,8 +17,9 @@ export async function getRecentEvents(): Promise<EventLogItem[]> {
         severity: "CRITICAL" | "WARNING" | "INFO";
         message: string;
         timestamp: string;
+        details?: any;
       }>
-    >("/events");
+    >(`/events?limit=${limit}`);
 
     return rawEvents.map((e) => ({
       id: e.id,
@@ -26,6 +27,7 @@ export async function getRecentEvents(): Promise<EventLogItem[]> {
       nodeId: e.nodeId,
       type: e.severity,
       message: e.message,
+      details: e.details,
     }));
   } catch (error) {
     if (APP_CONFIG.useMockFallback) {
@@ -48,6 +50,10 @@ export async function getLatestSystemDetection(): Promise<{
     rule_classification: string;
     reasons: string[];
   };
+  faultClassification?: FaultClassification | null;
+  risk?: RiskAnalysis | null;
+  localization?: LocalizationInfo | null;
+  explanation?: ExplanationInfo | null;
 } | null> {
   try {
     const res = await apiGet<any>("/detection/latest");

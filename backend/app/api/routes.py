@@ -2,7 +2,8 @@
 GridSenti — API Routes
 ======================
 FastAPI endpoints for live edge telemetry ingestion, node status monitoring,
-HIF detection results, alerts, and system event timeline.
+HIF detection results, multi-class predictions, risk scores, localization,
+explanations, alerts, and system event timeline.
 """
 
 from typing import List, Optional
@@ -33,8 +34,9 @@ router = APIRouter()
 def ingest_telemetry(payload: TelemetryRequest):
     """
     Ingest three-phase DWT energy telemetry (EA, EB, EC) from an edge node,
-    invoke the HIF detection engine (Rule Engine + Random Forest), update
-    in-memory node heartbeats and alerts, and return detection results.
+    invoke the HIF detection engine (Rule Engine + Binary Random Forest),
+    multi-class classifier, risk engine, localization, and explanation service,
+    update in-memory node heartbeats and alerts, and return combined detection output.
     """
     # Invoke HIF Detector
     raw_detection = detect_hif(ea=payload.ea, eb=payload.eb, ec=payload.ec)
@@ -55,15 +57,19 @@ def ingest_telemetry(payload: TelemetryRequest):
         reasons=rule_res.get("reasons", []),
     )
 
-    # Update state service (updates heartbeat, status, alerts, events)
-    node_status = state_service.update_telemetry(payload, detection_schema)
+    # Update state service (runs multi-class, risk, localization, explanation, and updates node state)
+    res_dict = state_service.update_telemetry(payload, detection_schema)
 
     return TelemetryResponse(
-        nodeId=payload.nodeId,
-        timestamp=payload.timestamp,
-        simulated=payload.simulated,
-        detection=detection_schema,
-        status=node_status.status,
+        nodeId=res_dict["nodeId"],
+        timestamp=res_dict["timestamp"],
+        simulated=res_dict["simulated"],
+        detection=res_dict["detection"],
+        faultClassification=res_dict["faultClassification"],
+        risk=res_dict["risk"],
+        localization=res_dict["localization"],
+        explanation=res_dict["explanation"],
+        status=res_dict["status"],
     )
 
 
@@ -138,6 +144,10 @@ def get_latest_detection_for_node(nodeId: str = Path(...)):
         "lastHeartbeat": node.lastHeartbeat,
         "latestTelemetry": node.latestTelemetry,
         "latestDetectionResult": node.latestDetectionResult,
+        "faultClassification": node.faultClassification,
+        "risk": node.risk,
+        "localization": node.localization,
+        "explanation": node.explanation,
     }
 
 
@@ -158,9 +168,11 @@ def get_alerts():
     response_model=List[EventSchema],
     summary="Get recent system event timeline",
 )
-def get_events():
+def get_events(
+    limit: int = Query(50, ge=1, le=200, description="Maximum number of recent events to return")
+):
     """Return chronological list of recent system events."""
-    return state_service.get_events()
+    return state_service.get_events(limit=limit)
 
 
 # ── 5. Health Check ──────────────────────────────────────────────────────────

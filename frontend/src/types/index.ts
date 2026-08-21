@@ -15,6 +15,48 @@ export type AlertSeverity = "INFO" | "WARNING" | "CRITICAL";
 
 export type SystemState = "NOMINAL" | "DEGRADED" | "CRITICAL";
 
+// ── Multi-Class Fault Classification ─────────────────────────
+
+export interface FaultClassification {
+  faultType: string;
+  faultTypeProbability: number;
+  faultTypeProbabilities: Record<string, number>;
+}
+
+// ── Risk Analysis ────────────────────────────────────────────
+
+export interface RiskAnalysis {
+  level: "LOW" | "MEDIUM" | "CRITICAL";
+  score: number;
+  components: {
+    mlEvidence: number;
+    ruleEvidence: number;
+    persistenceEvidence: number;
+  };
+  persistenceCount: number;
+  reasons: string[];
+  recommendedAction: string;
+}
+
+// ── Localization Info ────────────────────────────────────────
+
+export interface LocalizationInfo {
+  localizationType: string;
+  nodeId: string;
+  location: string;
+  feeder: string;
+  estimatedSection?: string;
+  disclaimer: string;
+}
+
+// ── Explanation Info ─────────────────────────────────────────
+
+export interface ExplanationInfo {
+  summary: string;
+  evidence: string[];
+  recommendedAction: string;
+}
+
 // ── Monitoring Node ──────────────────────────────────────────
 
 export interface MonitoringNode {
@@ -30,6 +72,10 @@ export interface MonitoringNode {
   lastDetection?: string | null;
   latestTelemetry?: any;
   latestDetectionResult?: any;
+  faultClassification?: FaultClassification | null;
+  risk?: RiskAnalysis | null;
+  localization?: LocalizationInfo | null;
+  explanation?: ExplanationInfo | null;
   firmwareVersion?: string;
 }
 
@@ -68,7 +114,7 @@ export interface TelemetryPacket {
 export interface FaultEvent {
   id: string;
   nodeId: string;
-  type: "HIF" | "OVERCURRENT" | "UNDERVOLTAGE" | "ANOMALY" | "UNKNOWN";
+  type: string;
   confidence: number;
   timestamp: string;
   status: FaultStatus;
@@ -100,11 +146,16 @@ export interface Alert {
   id: string;
   nodeId: string;
   severity: AlertSeverity;
+  type: string;
   message: string;
   timestamp: string;
   acknowledged: boolean;
   resolvedAt?: string;
   relatedFaultId?: string;
+  faultType?: string;
+  riskLevel?: string;
+  riskScore?: number;
+  recommendedAction?: string;
 }
 
 // ── Event Timeline Log Item ──────────────────────────────────
@@ -115,6 +166,7 @@ export interface EventLogItem {
   nodeId: string | null;
   type: string;
   message: string;
+  details?: any;
 }
 
 // ── System Status ────────────────────────────────────────────

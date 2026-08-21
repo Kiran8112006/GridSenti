@@ -36,7 +36,7 @@ export default function NodesPage() {
             )}
           </div>
           <p className="text-slate-400 text-sm mt-1">
-            Real-time edge node telemetry &amp; heartbeat status · GET /api/nodes
+            Real-time edge node telemetry, multi-class predictions &amp; risk scores · GET /api/nodes
             {lastUpdated && (
               <span className="text-slate-500 text-xs ml-2 font-mono">
                 (Last sync: {lastUpdated})
@@ -61,7 +61,7 @@ export default function NodesPage() {
       <section className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
           <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
-            <span>📋</span> Node Inventory &amp; Heartbeat Matrix
+            <span>📋</span> Node Inventory, Risk &amp; Fault Register
           </h2>
           <span className="text-slate-500 text-xs font-mono">
             Timeout Threshold: {APP_CONFIG.heartbeatTimeoutMs / 1000}s
@@ -78,10 +78,12 @@ export default function NodesPage() {
               <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-700/60">
                 <tr>
                   <th className="py-3 px-4">Node ID</th>
-                  <th className="py-3 px-4">Name</th>
                   <th className="py-3 px-4">Location / Feeder</th>
                   <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Last Detection</th>
+                  <th className="py-3 px-4">Predicted Fault Type</th>
+                  <th className="py-3 px-4">Risk Level &amp; Score</th>
+                  <th className="py-3 px-4">Persistence</th>
+                  <th className="py-3 px-4">Recommended Action</th>
                   <th className="py-3 px-4">Last Heartbeat</th>
                 </tr>
               </thead>
@@ -91,7 +93,6 @@ export default function NodesPage() {
                     <td className="py-3 px-4 font-bold text-cyan-300">
                       {node.nodeId || node.id}
                     </td>
-                    <td className="py-3 px-4">{node.name}</td>
                     <td className="py-3 px-4 text-slate-400">
                       {node.location ?? node.feeder ?? "Unmapped"}
                     </td>
@@ -117,16 +118,27 @@ export default function NodesPage() {
                         {node.status}
                       </span>
                     </td>
+                    <td className="py-3 px-4 font-bold text-cyan-300">
+                      {node.faultClassification?.faultType ?? (node.lastDetection === "HIF" ? "HIF" : "Normal")}
+                    </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`font-semibold ${
-                          node.lastDetection === "HIF"
+                        className={`font-bold ${
+                          node.risk?.level === "CRITICAL"
                             ? "text-red-400"
-                            : "text-emerald-400"
+                            : node.risk?.level === "MEDIUM"
+                              ? "text-amber-400"
+                              : "text-emerald-400"
                         }`}
                       >
-                        {node.lastDetection ?? "NORMAL"}
+                        {node.risk?.level ?? "LOW"} ({node.risk?.score ?? 0}/100)
                       </span>
+                    </td>
+                    <td className="py-3 px-4 font-bold text-amber-300">
+                      {node.risk?.persistenceCount ?? 0} pkts
+                    </td>
+                    <td className="py-3 px-4 text-slate-400 max-w-xs truncate">
+                      {node.risk?.recommendedAction ?? "CONTINUE_MONITORING"}
                     </td>
                     <td className="py-3 px-4 text-slate-400">
                       {node.lastHeartbeat ? timeAgo(node.lastHeartbeat) : "Never"}

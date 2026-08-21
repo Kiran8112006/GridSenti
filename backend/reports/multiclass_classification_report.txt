@@ -1,0 +1,35 @@
+============================================================
+GRIDSENTI MULTI-CLASS FAULT CLASSIFIER REPORT
+============================================================
+Dataset Citation: Mendeley Data V1 (DOI: 10.17632/rvypj5rs5b.1)
+Classes Trained: ['CS', 'HIF', 'LG', 'LL', 'LLG', 'LLLG', 'LS', 'Normal']
+Note: 'Downed Conductor' is a real-world target event, NOT a dataset class label.
+
+5-Fold Stratified Cross-Validation Accuracy: 0.9750 +/- 0.0333
+
+CLASSIFICATION REPORT:
+              precision    recall  f1-score   support
+
+          CS     1.0000    1.0000    1.0000        15
+         HIF     1.0000    0.9333    0.9655        15
+          LG     0.9375    1.0000    0.9677        15
+          LL     1.0000    1.0000    1.0000        15
+         LLG     0.8824    1.0000    0.9375        15
+        LLLG     1.0000    0.8667    0.9286        15
+          LS     1.0000    1.0000    1.0000        15
+      Normal     1.0000    1.0000    1.0000        15
+
+    accuracy                         0.9750       120
+   macro avg     0.9775    0.9750    0.9749       120
+weighted avg     0.9775    0.9750    0.9749       120
+
+
+CONFUSION MATRIX:
+[[15  0  0  0  0  0  0  0]
+ [ 0 14  1  0  0  0  0  0]
+ [ 0  0 15  0  0  0  0  0]
+ [ 0  0  0 15  0  0  0  0]
+ [ 0  0  0  0 15  0  0  0]
+ [ 0  0  0  0  2 13  0  0]
+ [ 0  0  0  0  0  0 15  0]
+ [ 0  0  0  0  0  0  0 15]]

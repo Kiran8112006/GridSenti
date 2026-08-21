@@ -23,12 +23,18 @@ export default function TelemetryPage() {
       simulated: rawTel?.simulated ?? true,
       timestamp: rawTel?.timestamp ?? node.lastHeartbeat ?? new Date().toISOString(),
       detection: detRes,
+      faultClassification: node.faultClassification ?? latestDetection?.faultClassification,
+      risk: node.risk ?? latestDetection?.risk,
+      explanation: node.explanation ?? latestDetection?.explanation,
     };
   });
 
   // Primary node detection info (GS-NODE-001)
   const primaryNode = nodeTelemetryList.find((n) => n.nodeId === "GS-NODE-001") ?? nodeTelemetryList[0];
   const primaryDet = primaryNode?.detection ?? latestDetection?.detection;
+  const primaryRisk = primaryNode?.risk ?? latestDetection?.risk;
+  const primaryMulti = primaryNode?.faultClassification ?? latestDetection?.faultClassification;
+  const primaryExp = primaryNode?.explanation ?? latestDetection?.explanation;
 
   const classification = primaryDet?.classification ?? "NON_HIF";
   const hifProb = Math.round((primaryDet?.model_probability?.HIF ?? 0) * 100);
@@ -130,11 +136,11 @@ export default function TelemetryPage() {
                 </div>
               </div>
 
-              {/* Footer status */}
+              {/* Footer status & Risk */}
               <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-1">
-                <span>Mode: <strong className="text-cyan-300">{item.simulationMode}</strong></span>
-                <span className={item.status === "ONLINE" ? "text-emerald-400" : "text-slate-500"}>
-                  ● {item.status}
+                <span>Type: <strong className="text-cyan-300">{item.faultClassification?.faultType ?? "Normal"}</strong></span>
+                <span className={item.risk?.level === "CRITICAL" ? "text-red-400 font-bold" : "text-emerald-400 font-bold"}>
+                  Risk: {item.risk?.level ?? "LOW"}
                 </span>
               </div>
             </div>
@@ -142,87 +148,77 @@ export default function TelemetryPage() {
         </div>
       </section>
 
-      {/* ── Real-Time Backend Detection Information Panel ──── */}
+      {/* ── Real-Time Backend Detection & Risk Breakdown ──── */}
       <section className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 space-y-4">
         <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
           <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
-            <span>🧠</span> Live Detection Inference Breakdown
+            <span>🧠</span> Telemetry Detection, Multi-Class &amp; Risk Intelligence
             <span className="text-cyan-400 font-mono text-xs normal-case">
               ({primaryNode?.nodeId ?? "GS-NODE-001"})
             </span>
           </h2>
           <span className="text-slate-500 text-xs font-mono">
-            Model: Random Forest Classifier
+            Model: Random Forest Multi-Class + Binary
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 font-mono text-xs">
           {/* Classification Badge */}
-          <div className="bg-slate-900/60 p-4 rounded-lg border border-slate-700/50 flex flex-col justify-between">
+          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50 flex flex-col justify-between">
             <span className="text-slate-500 text-[11px] block mb-1 uppercase tracking-wider">Classification</span>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`text-xl font-bold ${classification === "HIF" ? "text-red-400" : "text-emerald-400"}`}>
-                {classification === "HIF" ? "🔴 HIF" : "🟢 NORMAL"}
-              </span>
-            </div>
-            <span className="text-slate-500 text-[10px] mt-2 block">
-              {classification === "HIF" ? "High-Impedance Fault Detected" : "Normal Grid Operation"}
+            <span className={`text-lg font-bold ${classification === "HIF" ? "text-red-400" : "text-emerald-400"}`}>
+              {classification === "HIF" ? "🔴 HIF" : "🟢 NORMAL"}
+            </span>
+            <span className="text-slate-500 text-[10px] mt-1 block">Binary Detector</span>
+          </div>
+
+          {/* Fault Type */}
+          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50 flex flex-col justify-between">
+            <span className="text-slate-500 text-[11px] block mb-1 uppercase tracking-wider">Fault Type</span>
+            <span className="text-lg font-bold text-cyan-300">
+              {primaryMulti?.faultType ?? "Normal"}
+            </span>
+            <span className="text-slate-500 text-[10px] mt-1 block">
+              Prob: {((primaryMulti?.faultTypeProbability ?? 1) * 100).toFixed(0)}%
             </span>
           </div>
 
-          {/* HIF Probability */}
-          <div className="bg-slate-900/60 p-4 rounded-lg border border-slate-700/50 flex flex-col justify-between">
-            <span className="text-slate-500 text-[11px] block mb-1 uppercase tracking-wider">HIF Model Probability</span>
-            <span className={`text-xl font-bold ${hifProb > 50 ? "text-red-400" : "text-emerald-400"}`}>
-              {hifProb}%
+          {/* Risk Level & Score */}
+          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50 flex flex-col justify-between">
+            <span className="text-slate-500 text-[11px] block mb-1 uppercase tracking-wider">Risk Score</span>
+            <span className={`text-lg font-bold ${primaryRisk?.level === "CRITICAL" ? "text-red-400" : primaryRisk?.level === "MEDIUM" ? "text-amber-400" : "text-emerald-400"}`}>
+              {primaryRisk?.level ?? "LOW"} ({primaryRisk?.score ?? 0}/100)
             </span>
-            <span className="text-slate-500 text-[10px] mt-2 block">
-              Random Forest Voting Probability
+            <span className="text-slate-500 text-[10px] mt-1 block">Composite Score</span>
+          </div>
+
+          {/* Persistence Count */}
+          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50 flex flex-col justify-between">
+            <span className="text-slate-500 text-[11px] block mb-1 uppercase tracking-wider">Persistence</span>
+            <span className="text-lg font-bold text-amber-300">
+              {primaryRisk?.persistenceCount ?? 0} pkts
             </span>
+            <span className="text-slate-500 text-[10px] mt-1 block">Consecutive Packets</span>
           </div>
 
           {/* Rule Score */}
-          <div className="bg-slate-900/60 p-4 rounded-lg border border-slate-700/50 flex flex-col justify-between">
+          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50 flex flex-col justify-between">
             <span className="text-slate-500 text-[11px] block mb-1 uppercase tracking-wider">Rule Score</span>
-            <span className={`text-xl font-bold ${ruleScore > 50 ? "text-amber-400" : "text-emerald-400"}`}>
+            <span className={`text-lg font-bold ${ruleScore > 50 ? "text-amber-400" : "text-emerald-400"}`}>
               {ruleScore} / 100
             </span>
-            <span className="text-slate-500 text-[10px] mt-2 block">
-              Feature Anomaly Shift Score
-            </span>
-          </div>
-
-          {/* Rule Classification */}
-          <div className="bg-slate-900/60 p-4 rounded-lg border border-slate-700/50 flex flex-col justify-between">
-            <span className="text-slate-500 text-[11px] block mb-1 uppercase tracking-wider">Rule Classification</span>
-            <span className={`text-xl font-bold ${ruleClassification === "POSSIBLE_HIF" ? "text-amber-400" : "text-emerald-400"}`}>
-              {ruleClassification}
-            </span>
-            <span className="text-slate-500 text-[10px] mt-2 block">
-              Prototype Baseline Filter
-            </span>
+            <span className="text-slate-500 text-[10px] mt-1 block">{ruleClassification}</span>
           </div>
         </div>
 
-        {/* Detection Reasons Bulleted List */}
+        {/* Explanation Summary Box */}
         <div className="bg-slate-900/60 p-4 rounded-lg border border-slate-700/50 text-xs">
-          <span className="text-slate-400 font-mono font-semibold block mb-2 uppercase text-[11px]">
-            Detection Trigger Reasons:
+          <span className="text-cyan-400 font-mono font-semibold block mb-1 uppercase text-[11px]">
+            Deterministic Evidence Explanation:
           </span>
-          {reasons.length > 0 ? (
-            <ul className="space-y-1.5 font-mono text-slate-300">
-              {reasons.map((r, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-cyan-400 text-sm">•</span>
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-slate-500 font-mono text-[11px]">
-              No anomaly shift detected. Baseline DWT energy ratios are stable.
-            </p>
-          )}
+          <p className="text-slate-300 font-mono text-[11px] leading-relaxed">
+            {primaryExp?.summary ?? "GridSenti verified nominal operating conditions. DWT energy feature ratios remain stable within steady-state normal bounds."}
+          </p>
         </div>
       </section>
 
@@ -242,11 +238,12 @@ export default function TelemetryPage() {
             <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-700/60">
               <tr>
                 <th className="py-3 px-4">Node ID</th>
-                <th className="py-3 px-4">Simulation Mode</th>
-                <th className="py-3 px-4">EA (Phase A DWT Energy)</th>
-                <th className="py-3 px-4">EB (Phase B DWT Energy)</th>
-                <th className="py-3 px-4">EC (Phase C DWT Energy)</th>
-                <th className="py-3 px-4">Simulated Flag</th>
+                <th className="py-3 px-4">Mode</th>
+                <th className="py-3 px-4">EA (Phase A Energy)</th>
+                <th className="py-3 px-4">EB (Phase B Energy)</th>
+                <th className="py-3 px-4">EC (Phase C Energy)</th>
+                <th className="py-3 px-4">Fault Type</th>
+                <th className="py-3 px-4">Risk Level</th>
                 <th className="py-3 px-4">Timestamp</th>
               </tr>
             </thead>
@@ -268,9 +265,12 @@ export default function TelemetryPage() {
                   <td className="py-3 px-4 text-emerald-400 font-bold">
                     {item.ec ? item.ec.toExponential(3) : "0.000e+00"}
                   </td>
+                  <td className="py-3 px-4 font-bold text-cyan-300">
+                    {item.faultClassification?.faultType ?? "Normal"}
+                  </td>
                   <td className="py-3 px-4">
-                    <span className="text-amber-400 font-bold">
-                      {item.simulated ? "true (SIMULATED)" : "false"}
+                    <span className={`font-bold ${item.risk?.level === "CRITICAL" ? "text-red-400" : "text-emerald-400"}`}>
+                      {item.risk?.level ?? "LOW"} ({item.risk?.score ?? 0}/100)
                     </span>
                   </td>
                   <td className="py-3 px-4 text-slate-400">{item.timestamp}</td>

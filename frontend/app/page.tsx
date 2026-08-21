@@ -7,7 +7,7 @@ import HIFStatusPanel from "@/components/dashboard/HIFStatusPanel";
 import FaultLocation from "@/components/dashboard/FaultLocation";
 import EventTimeline from "@/components/dashboard/EventTimeline";
 import SystemHealth from "@/components/dashboard/SystemHealth";
-import TelemetryCard from "@/components/telemetry/TelemetryCard";
+import UtilitySchematic from "@/components/dashboard/UtilitySchematic";
 
 import { useGridSentiData } from "@/hooks/useGridSentiData";
 import { APP_CONFIG } from "@/config/app.config";
@@ -39,8 +39,12 @@ export default function DashboardPage() {
     activeAlerts: alerts.length,
   };
 
-  // Determine HIF active state from latest detection
+  // Extract latest detection & risk information
   const detectionObj = latestDetection?.detection;
+  const riskObj = latestDetection?.risk;
+  const multiclassObj = latestDetection?.faultClassification;
+  const explanationObj = latestDetection?.explanation;
+
   const isHifActive =
     detectionObj &&
     (detectionObj.classification === "HIF" ||
@@ -51,25 +55,6 @@ export default function DashboardPage() {
   const hifConfidence = detectionObj?.model_probability?.HIF ?? null;
   const hifRuleScore = detectionObj?.rule_score ?? null;
   const hifReasons = detectionObj?.reasons ?? [];
-
-  // Extract live telemetry cards for each node
-  const liveTelemetryPackets: TelemetryPacket[] = nodes.map((node) => {
-    const rawTel = (node as any).latestTelemetry;
-    const cur = rawTel?.ea ? Number((rawTel.ea / 1e9).toFixed(2)) : 0;
-    const volt = rawTel?.eb ? Number((rawTel.eb / 1e8).toFixed(2)) : 0;
-    const anom = rawTel?.ec ? Number((rawTel.ec / 1e10).toFixed(2)) : 0;
-    return {
-      nodeId: node.nodeId || node.id || "GS-NODE-XXX",
-      currentA: cur,
-      voltageV: volt,
-      anomalyIdx: anom,
-      current: cur,
-      voltage: volt,
-      waveformAnomaly: anom,
-      rssiDbm: node.status === "ONLINE" ? -65 : -99,
-      timestamp: node.lastHeartbeat ?? new Date().toISOString(),
-    };
-  });
 
   return (
     <div className="p-6 space-y-8 max-w-screen-2xl mx-auto">
@@ -88,12 +73,12 @@ export default function DashboardPage() {
             ) : (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-red-950 text-red-400 border border-red-800 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-red-500" />
-                BACKEND DISCONNECTED
+                BACKEND DISCONNECTED — STALE DATA
               </span>
             )}
           </div>
           <p className="text-slate-400 text-sm mt-1">
-            High-Impedance Fault Detection &amp; Monitoring · Prototype v0.1.0
+            High-Impedance Fault Detection &amp; Risk Intelligence · Prototype v0.1.0
             {lastUpdated && (
               <span className="text-slate-500 text-xs ml-2 font-mono">
                 (Last sync: {lastUpdated})
@@ -141,34 +126,91 @@ export default function DashboardPage() {
           )}
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatusCard
-            title="Total Nodes"
-            value={totalNodes}
-            status="neutral"
-            icon="◉"
-          />
-          <StatusCard
-            title="Online"
-            value={onlineNodes}
-            status="nominal"
-            icon="🟢"
-          />
-          <StatusCard
-            title="Warning"
-            value={warningNodes}
-            status="warning"
-            icon="🟡"
-          />
-          <StatusCard
-            title="Offline"
-            value={offlineNodes}
-            status="offline"
-            icon="⚫"
-          />
+          <StatusCard title="Total Nodes" value={totalNodes} status="neutral" icon="◉" />
+          <StatusCard title="Online" value={onlineNodes} status="nominal" icon="🟢" />
+          <StatusCard title="Warning" value={warningNodes} status="warning" icon="🟡" />
+          <StatusCard title="Offline" value={offlineNodes} status="offline" icon="⚫" />
         </div>
       </section>
 
-      {/* ── Monitoring Nodes ─────────────────────────────────── */}
+      {/* ── Risk & Fault Intelligence Cards ──────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Risk Card */}
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400 uppercase font-bold text-[11px]">System Risk Score</span>
+            <span
+              className={`px-2 py-0.5 rounded font-bold ${
+                riskObj?.level === "CRITICAL"
+                  ? "bg-red-950 text-red-400 border border-red-800"
+                  : riskObj?.level === "MEDIUM"
+                    ? "bg-amber-950 text-amber-400 border border-amber-800"
+                    : "bg-emerald-950 text-emerald-400 border border-emerald-800"
+              }`}
+            >
+              {riskObj?.level ?? "LOW"}
+            </span>
+          </div>
+
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-bold text-white">
+              {riskObj?.score ?? 0} <span className="text-xs text-slate-500 font-normal">/ 100</span>
+            </span>
+            <span className="text-slate-400 text-[11px]">
+              Persistence: <strong className="text-amber-300">{riskObj?.persistenceCount ?? 0}</strong> pkts
+            </span>
+          </div>
+
+          {/* Score progress bar */}
+          <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                riskObj?.level === "CRITICAL"
+                  ? "bg-red-500"
+                  : riskObj?.level === "MEDIUM"
+                    ? "bg-amber-500"
+                    : "bg-emerald-500"
+              }`}
+              style={{ width: `${riskObj?.score ?? 0}%` }}
+            />
+          </div>
+
+          <span className="text-[10px] text-slate-400 block truncate">
+            Action: <strong className="text-cyan-300">{riskObj?.recommendedAction ?? "CONTINUE_MONITORING"}</strong>
+          </span>
+        </div>
+
+        {/* Multi-Class Fault Type Card */}
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-3">
+          <span className="text-slate-400 uppercase font-bold text-[11px] block">Predicted Fault Type</span>
+          <div className="flex items-baseline justify-between">
+            <span className={`text-2xl font-bold ${multiclassObj?.faultType === "HIF" ? "text-red-400" : "text-cyan-300"}`}>
+              {multiclassObj?.faultType ?? "Normal"}
+            </span>
+            <span className="text-slate-400 text-[11px]">
+              Prob: <strong className="text-emerald-400">{((multiclassObj?.faultTypeProbability ?? 1) * 100).toFixed(0)}%</strong>
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-400">
+            Trained Classes: Normal, LG, LLG, LLLG, LL, HIF, CS, LS
+          </p>
+        </div>
+
+        {/* Why was this flagged? Explanation Summary Card */}
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-2">
+          <span className="text-slate-400 uppercase font-bold text-[11px] flex items-center gap-1.5">
+            <span>💡</span> Why Was This Flagged?
+          </span>
+          <p className="text-slate-300 text-[11px] leading-relaxed line-clamp-3">
+            {explanationObj?.summary ?? "GridSenti verified nominal operating conditions. DWT energy feature ratios remain stable within steady-state bounds."}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Feeder Topology Schematic ───────────────────────── */}
+      <UtilitySchematic nodes={nodes} />
+
+      {/* ── Monitoring Nodes Grid ───────────────────────────── */}
       <NodeGrid nodes={nodes} />
 
       {/* ── Two-column: Alerts + HIF Detection ──────────────── */}
@@ -197,27 +239,6 @@ export default function DashboardPage() {
           mlModelStatus="READY"
         />
       </div>
-
-      {/* ── Telemetry Overview ───────────────────────────────── */}
-      <section>
-        <h2 className="text-slate-300 text-sm font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
-          <span>📡</span> Telemetry Overview
-          <span className="text-slate-500 text-xs font-normal normal-case">
-            (live DWT energy features from edge nodes)
-          </span>
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          {liveTelemetryPackets.length > 0 ? (
-            liveTelemetryPackets.map((pkt) => (
-              <TelemetryCard key={pkt.nodeId} packet={pkt} />
-            ))
-          ) : (
-            <div className="col-span-4 p-4 text-center text-slate-500 bg-slate-900/40 rounded-xl border border-slate-800 text-xs font-mono">
-              Awaiting edge node telemetry packets...
-            </div>
-          )}
-        </div>
-      </section>
 
       {/* ── Recent Events timeline ───────────────────────────── */}
       <EventTimeline events={events} />

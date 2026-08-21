@@ -34,7 +34,7 @@ export default function AlertsPage() {
             )}
           </div>
           <p className="text-slate-400 text-sm mt-1">
-            Real-time emergency warning &amp; alert dispatch log · GET /api/alerts
+            Real-time emergency warning, risk level &amp; action recommendation register · GET /api/alerts
             {lastUpdated && (
               <span className="text-slate-500 text-xs ml-2 font-mono">
                 (Last sync: {lastUpdated})
@@ -47,8 +47,8 @@ export default function AlertsPage() {
       {/* ── Alert Counters ───────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatusCard title="Total Active" value={alerts.length} status={alerts.length > 0 ? "warning" : "nominal"} icon="🔔" />
-        <StatusCard title="Critical HIF" value={criticalCount} status={criticalCount > 0 ? "offline" : "nominal"} icon="🔴" />
-        <StatusCard title="Warnings" value={warningCount} status={warningCount > 0 ? "warning" : "nominal"} icon="🟡" />
+        <StatusCard title="Critical Risk" value={criticalCount} status={criticalCount > 0 ? "offline" : "nominal"} icon="🔴" />
+        <StatusCard title="Medium Risk Warnings" value={warningCount} status={warningCount > 0 ? "warning" : "nominal"} icon="🟡" />
         <StatusCard title="Info Events" value={infoCount} status="neutral" icon="🔵" />
       </div>
 
@@ -65,24 +65,24 @@ export default function AlertsPage() {
           <div className="space-y-3 text-xs text-slate-300">
             <div className="bg-red-950/30 border border-red-500/30 p-3 rounded-lg">
               <p className="font-bold text-red-400 mb-1 flex items-center gap-1.5">
-                <span>🔴</span> CRITICAL HIF ALERT PROTOCOL
+                <span>🔴</span> CRITICAL RISK PROTOCOL (Score 70-100)
               </p>
               <p className="text-slate-300 leading-relaxed">
-                When a CRITICAL alert is triggered for a node, an electrical conductor may be down or contacting high-impedance ground. Despatch field crew for visual inspection immediately. Do NOT approach suspected site.
+                Persistent HIF or high-risk line fault confirmed. Despatch field crew for visual inspection immediately. Do NOT approach suspected site. Action: UTILITY_ALERT_AND_ISOLATION_RECOMMENDATION.
               </p>
             </div>
 
             <div className="bg-amber-950/30 border border-amber-500/30 p-3 rounded-lg">
               <p className="font-bold text-amber-400 mb-1 flex items-center gap-1.5">
-                <span>🟡</span> WARNING &amp; IMBALANCE PROTOCOL
+                <span>🟡</span> MEDIUM RISK PROTOCOL (Score 35-69)
               </p>
               <p className="text-slate-300 leading-relaxed">
-                Indicates moderate phase energy shift or heartbeat delay. Monitor telemetry for subsequent escalation.
+                Indicates moderate phase energy shift or heartbeat delay. Action: INVESTIGATE_NODE.
               </p>
             </div>
 
             <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-700/50 text-slate-400 text-[11px]">
-              Note: This is a hackathon prototype warning system based on simulated research telemetry.
+              Note: Prototype warning system based on simulated research telemetry. Does NOT implement physical relay isolation.
             </div>
           </div>
         </section>
@@ -92,7 +92,7 @@ export default function AlertsPage() {
       <section className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
           <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
-            <span>📊</span> Active Alerts Detailed Register
+            <span>📊</span> Active Emergency Alerts Detailed Register
           </h2>
           <span className="text-slate-500 text-xs font-mono">
             Count: {alerts.length}
@@ -109,8 +109,10 @@ export default function AlertsPage() {
               <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-700/60">
                 <tr>
                   <th className="py-3 px-4">Severity</th>
-                  <th className="py-3 px-4">Type</th>
+                  <th className="py-3 px-4">Fault Type</th>
+                  <th className="py-3 px-4">Risk Level &amp; Score</th>
                   <th className="py-3 px-4">Node ID</th>
+                  <th className="py-3 px-4">Recommended Action</th>
                   <th className="py-3 px-4">Message</th>
                   <th className="py-3 px-4">Timestamp</th>
                 </tr>
@@ -131,9 +133,13 @@ export default function AlertsPage() {
                         {a.severity}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-bold text-slate-200">{a.severity}</td>
+                    <td className="py-3 px-4 font-bold text-cyan-300">{a.faultType ?? "HIF"}</td>
+                    <td className="py-3 px-4 font-bold text-amber-400">
+                      {a.riskLevel ?? a.severity} ({a.riskScore ?? 0}/100)
+                    </td>
                     <td className="py-3 px-4 text-cyan-300 font-bold">{a.nodeId}</td>
-                    <td className="py-3 px-4 text-slate-300 max-w-md truncate">{a.message}</td>
+                    <td className="py-3 px-4 text-slate-400 max-w-xs truncate">{a.recommendedAction ?? "UTILITY_ALERT"}</td>
+                    <td className="py-3 px-4 text-slate-300 max-w-sm truncate">{a.message}</td>
                     <td className="py-3 px-4 text-slate-400">{timeAgo(a.timestamp)}</td>
                   </tr>
                 ))}
