@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { APP_CONFIG } from "@/config/app.config";
 
 export default function Header() {
@@ -34,11 +35,19 @@ export default function Header() {
 }
 
 function SystemClock() {
-  // NOTE: Using static text for SSR safety.
-  // A later phase can hydrate with a client-side clock.
+  // Renders nothing until mounted, then ticks every second — avoids the
+  // server/client hydration mismatch that a render-time `new Date()` causes.
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+    const intervalId = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
     <span className="text-steel text-xs font-mono meter hidden md:block">
-      {new Date().toUTCString().replace("GMT", "UTC")}
+      {now ? now.toUTCString().replace("GMT", "UTC") : ""}
     </span>
   );
 }
