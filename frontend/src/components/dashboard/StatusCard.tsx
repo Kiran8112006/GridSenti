@@ -16,40 +16,43 @@ export default function StatusCard({
   icon,
 }: StatusCardProps) {
   const valueColor = {
-    nominal: "text-emerald-400",
-    warning: "text-amber-400",
-    critical: "text-red-400",
-    offline: "text-slate-500",
-    neutral: "text-slate-100",
+    nominal: "text-nominal",
+    warning: "text-warning",
+    critical: "text-critical",
+    offline: "text-offline",
+    neutral: "text-ink",
   }[status];
 
-  const borderColor = {
-    nominal: "border-emerald-500/20",
-    warning: "border-amber-500/20",
-    critical: "border-red-500/20",
-    offline: "border-slate-700",
-    neutral: "border-slate-700/60",
+  const accentBar = {
+    nominal: "bg-nominal",
+    warning: "bg-warning",
+    critical: "bg-critical",
+    offline: "bg-offline",
+    neutral: "bg-line-strong",
   }[status];
 
   return (
-    <div
-      className={cn(
-        "bg-slate-800/60 border rounded-xl p-4 flex flex-col gap-1",
-        borderColor,
-      )}
-    >
+    <div className="relative bg-panel border border-line rounded-lg pl-4 pr-3 py-3 flex flex-col gap-2 overflow-hidden">
+      <span className={cn("absolute left-0 top-0 bottom-0 w-1", accentBar)} />
       <div className="flex items-center justify-between">
-        <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">
+        <span className="text-steel text-xs font-display font-medium uppercase tracking-wide">
           {title}
         </span>
-        {icon && <span className="text-lg">{icon}</span>}
+        {icon && (
+          <span className={cn("text-sm leading-none", valueColor)}>
+            {icon}
+          </span>
+        )}
       </div>
-      <div className={cn("text-2xl font-bold font-mono", valueColor)}>
+      <div
+        className={cn(
+          "meter text-2xl font-bold font-mono bg-paper border border-line rounded-md px-2.5 py-1.5 w-fit",
+          valueColor,
+        )}
+      >
         {value}
       </div>
-      {subtitle && (
-        <div className="text-slate-500 text-xs mt-0.5">{subtitle}</div>
-      )}
+      {subtitle && <div className="text-steel-light text-xs">{subtitle}</div>}
     </div>
   );
 }

@@ -30,36 +30,36 @@ export default function SimulateIsolationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 font-mono animate-fadeIn">
-      <div className="bg-slate-900 border-2 border-red-500/80 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl shadow-red-500/20">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-sm p-4 font-mono">
+      <div className="bg-panel border-2 border-critical/60 rounded-lg max-w-md w-full p-6 space-y-5 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-slate-700/60 pb-3">
-          <span className="w-9 h-9 rounded-full bg-red-950 text-red-400 border border-red-800 flex items-center justify-center text-lg shrink-0">
-            🔌
+        <div className="flex items-center gap-3 border-b border-line pb-3">
+          <span className="w-9 h-9 rounded-full bg-critical-light text-critical border border-critical/30 flex items-center justify-center text-lg shrink-0">
+            ⚙
           </span>
           <div>
-            <h3 className="text-white font-bold text-base tracking-tight">
+            <h3 className="text-ink font-display font-bold text-base uppercase tracking-wide">
               Simulate Feeder Isolation
             </h3>
-            <span className="text-amber-400 text-[10px] uppercase tracking-wider block font-semibold">
-              SOFTWARE SIMULATION ONLY
+            <span className="text-warning text-[10px] uppercase tracking-wider block font-display font-semibold">
+              Software Simulation Only
             </span>
           </div>
         </div>
 
         {/* Body */}
-        <div className="space-y-3 text-xs text-slate-300">
+        <div className="space-y-3 text-xs text-steel">
           <p className="leading-relaxed">
             Are you sure you want to simulate section isolation for{" "}
-            <strong className="text-cyan-300 font-bold">{nodeId}</strong>?
+            <strong className="text-signal font-bold">{nodeId}</strong>?
           </p>
 
-          <div className="bg-slate-800/80 p-3 rounded-lg border border-slate-700/60 text-[11px] text-slate-400 space-y-1">
-            <span className="text-red-400 font-bold block uppercase text-[10px]">
-              ⚠️ Prototype Safety Notice:
+          <div className="bg-paper p-3 rounded-md border border-line text-[11px] text-steel space-y-1">
+            <span className="text-critical font-display font-bold block uppercase text-[10px]">
+              ▲ Prototype Safety Notice:
             </span>
             <p>
-              This action will mark the feeder section as <strong className="text-red-400">ISOLATED (SIMULATION)</strong> in software. No physical relay hardware, mains electricity, or high-voltage circuits will be triggered.
+              This action will mark the feeder section as <strong className="text-critical">ISOLATED (SIMULATION)</strong> in software. No physical relay hardware, mains electricity, or high-voltage circuits will be triggered.
             </p>
           </div>
         </div>
@@ -70,7 +70,7 @@ export default function SimulateIsolationModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors border border-slate-700"
+            className="px-4 py-2 rounded-md bg-paper hover:bg-line text-steel text-xs font-display font-semibold uppercase tracking-wide transition-colors border border-line"
           >
             Cancel
           </button>
@@ -78,7 +78,7 @@ export default function SimulateIsolationModal({
             type="button"
             onClick={handleConfirm}
             disabled={isSubmitting}
-            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-lg shadow-red-600/30 flex items-center gap-2"
+            className="px-4 py-2 rounded-md bg-critical hover:bg-critical/90 text-white text-xs font-display font-bold uppercase tracking-wide transition-colors flex items-center gap-2"
           >
             {isSubmitting ? "Simulating..." : "Simulate Isolation"}
           </button>

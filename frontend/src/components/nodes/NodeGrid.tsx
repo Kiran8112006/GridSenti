@@ -8,9 +8,9 @@ interface NodeGridProps {
 export default function NodeGrid({ nodes }: NodeGridProps) {
   return (
     <section>
-      <h2 className="text-slate-300 text-sm font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
-        <span>◉</span> Monitoring Nodes
-        <span className="text-slate-500 text-xs font-normal normal-case">
+      <h2 className="text-steel text-sm font-display font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
+        <span className="text-signal">◉</span> Monitoring Nodes
+        <span className="text-steel-light text-xs font-sans font-normal normal-case">
           ({nodes.length} registered)
         </span>
       </h2>

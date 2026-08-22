@@ -17,6 +17,20 @@ import { simulateIsolation, resetIsolation } from "@/services/isolation.service"
 import { APP_CONFIG } from "@/config/app.config";
 import type { SystemStatus } from "@/types";
 
+function ConnectionBadge({ isConnected }: { isConnected: boolean }) {
+  return isConnected ? (
+    <span className="pl-2.5 pr-2 py-0.5 border-l-4 border-nominal bg-nominal-light text-nominal text-xs font-display font-semibold uppercase tracking-wide flex items-center gap-1.5">
+      <span className="w-1.5 h-1.5 rounded-full bg-nominal" />
+      Live Backend Connected
+    </span>
+  ) : (
+    <span className="pl-2.5 pr-2 py-0.5 border-l-4 border-critical bg-critical-light text-critical text-xs font-display font-semibold uppercase tracking-wide flex items-center gap-1.5">
+      <span className="w-1.5 h-1.5 rounded-full bg-critical" />
+      Backend Disconnected — Stale Data
+    </span>
+  );
+}
+
 export default function DashboardPage() {
   const {
     nodes,
@@ -57,7 +71,6 @@ export default function DashboardPage() {
   const detectionObj = latestDetection?.detection;
   const riskObj = latestDetection?.risk;
   const multiclassObj = latestDetection?.faultClassification;
-  const explanationObj = latestDetection?.explanation;
   const isolationObj = latestDetection?.isolationState;
   const commStateObj = latestDetection?.communicationState || "REMOTE_CONNECTED";
 
@@ -83,30 +96,20 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto font-sans">
+    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto">
       {/* ── Page header ──────────────────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl font-display font-semibold text-ink tracking-wide uppercase">
               Grid Operations Center
             </h1>
-            {isConnected ? (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                LIVE BACKEND CONNECTED
-              </span>
-            ) : (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-red-950 text-red-400 border border-red-800 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-red-500" />
-                BACKEND DISCONNECTED — STALE DATA
-              </span>
-            )}
+            <ConnectionBadge isConnected={isConnected} />
           </div>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-steel text-sm mt-0.5">
             High-Impedance Fault Detection, Safety Response &amp; Isolation Simulation · v0.2.0
             {lastUpdated && (
-              <span className="text-slate-500 text-xs ml-2 font-mono">
+              <span className="text-steel-light text-xs ml-2 font-mono meter">
                 (Last sync: {lastUpdated})
               </span>
             )}
@@ -115,25 +118,25 @@ export default function DashboardPage() {
 
         {/* Dynamic Warning / Status Banner */}
         {isConnected ? (
-          <div className="flex items-center gap-2.5 bg-cyan-950/40 border border-cyan-500/30 rounded-lg px-4 py-2.5 text-cyan-300 text-xs max-w-md shadow-sm">
-            <span className="text-base shrink-0">📡</span>
+          <div className="flex items-center gap-2.5 bg-signal-light border-l-4 border-signal rounded-r-md pl-3 pr-4 py-2 text-signal text-xs max-w-md">
+            <span className="text-sm shrink-0">∿</span>
             <div>
-              <p className="font-semibold text-cyan-200 uppercase font-mono">
-                LIVE EDGE TELEMETRY STREAM
+              <p className="font-display font-semibold uppercase tracking-wide">
+                Live Edge Telemetry Stream
               </p>
-              <p className="text-cyan-400/80 text-[11px] mt-0.5 font-mono">
+              <p className="text-signal/80 text-[11px] mt-0.5 font-mono">
                 ESP8266 replaying Mendeley HIF Dataset (DOI: 10.17632/rvypj5rs5b.1).
               </p>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2.5 bg-red-950/60 border border-red-500/50 rounded-lg px-4 py-2.5 text-red-200 text-xs max-w-md shadow-sm">
-            <span className="text-base shrink-0">⚠️</span>
+          <div className="flex items-center gap-2.5 bg-critical-light border-l-4 border-critical rounded-r-md pl-3 pr-4 py-2 text-critical text-xs max-w-md">
+            <span className="text-sm shrink-0">▲</span>
             <div>
-              <p className="font-semibold text-red-300 font-mono uppercase">
-                BACKEND DISCONNECTED — STALE DATA
+              <p className="font-display font-semibold uppercase tracking-wide">
+                Backend Disconnected — Stale Data
               </p>
-              <p className="text-red-400/80 text-[11px] mt-0.5 font-mono">
+              <p className="text-critical/80 text-[11px] mt-0.5 font-mono">
                 Cannot reach FastAPI at {APP_CONFIG.api.baseUrl}. Ensure backend server is running.
               </p>
             </div>
@@ -143,30 +146,30 @@ export default function DashboardPage() {
 
       {/* ── Overall Grid Status cards ────────────────────────── */}
       <section>
-        <h2 className="text-slate-300 text-sm font-semibold uppercase tracking-wider mb-3 flex items-center gap-2 font-mono">
-          <span>⬡</span> Overall Grid Status
+        <h2 className="text-steel text-sm font-display font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
+          <span className="text-signal">▣</span> Overall Grid Status
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatusCard title="Total Nodes" value={totalNodes} status="neutral" icon="◉" />
-          <StatusCard title="Online" value={onlineNodes} status="nominal" icon="🟢" />
-          <StatusCard title="Warning" value={warningNodes} status="warning" icon="🟡" />
-          <StatusCard title="Offline" value={offlineNodes} status="offline" icon="⚫" />
+          <StatusCard title="Total Nodes" value={totalNodes} status="neutral" icon="▣" />
+          <StatusCard title="Online" value={onlineNodes} status="nominal" icon="●" />
+          <StatusCard title="Warning" value={warningNodes} status="warning" icon="●" />
+          <StatusCard title="Offline" value={offlineNodes} status="offline" icon="●" />
         </div>
       </section>
 
       {/* ── Batch 2 Safety Response & Risk Intelligence Cards ─── */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* System Risk Score */}
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-3">
+        <div className="bg-panel border border-line rounded-lg p-4 font-mono text-xs space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-slate-400 uppercase font-bold text-[11px]">System Risk Score</span>
+            <span className="text-steel uppercase font-display font-bold text-[11px] tracking-wide">System Risk Score</span>
             <span
-              className={`px-2 py-0.5 rounded font-bold ${
+              className={`px-2 py-0.5 rounded font-bold meter border ${
                 riskObj?.level === "CRITICAL"
-                  ? "bg-red-950 text-red-400 border border-red-800"
+                  ? "bg-critical-light text-critical border-critical/20"
                   : riskObj?.level === "MEDIUM"
-                    ? "bg-amber-950 text-amber-400 border border-amber-800"
-                    : "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                    ? "bg-warning-light text-warning border-warning/20"
+                    : "bg-nominal-light text-nominal border-nominal/20"
               }`}
             >
               {riskObj?.level ?? "LOW"}
@@ -174,58 +177,58 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-white">
-              {riskObj?.score ?? 0} <span className="text-xs text-slate-500 font-normal">/ 100</span>
+            <span className="text-2xl font-bold meter text-ink">
+              {riskObj?.score ?? 0} <span className="text-xs text-steel-light font-normal">/ 100</span>
             </span>
-            <span className="text-slate-400 text-[11px]">
-              Persistence: <strong className="text-amber-300">{riskObj?.persistenceCount ?? 0}</strong> pkts
+            <span className="text-steel text-[11px]">
+              Persistence: <strong className="text-warning">{riskObj?.persistenceCount ?? 0}</strong> pkts
             </span>
           </div>
 
-          <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-line rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
                 riskObj?.level === "CRITICAL"
-                  ? "bg-red-500"
+                  ? "bg-critical"
                   : riskObj?.level === "MEDIUM"
-                    ? "bg-amber-500"
-                    : "bg-emerald-500"
+                    ? "bg-warning"
+                    : "bg-nominal"
               }`}
               style={{ width: `${riskObj?.score ?? 0}%` }}
             />
           </div>
 
-          <span className="text-[10px] text-slate-400 block truncate">
-            Action: <strong className="text-cyan-300">{riskObj?.recommendedAction ?? "CONTINUE_MONITORING"}</strong>
+          <span className="text-[10px] text-steel block truncate">
+            Action: <strong className="text-signal">{riskObj?.recommendedAction ?? "CONTINUE_MONITORING"}</strong>
           </span>
         </div>
 
         {/* Multi-Class Fault Type */}
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-3">
-          <span className="text-slate-400 uppercase font-bold text-[11px] block">Predicted Fault Type</span>
+        <div className="bg-panel border border-line rounded-lg p-4 font-mono text-xs space-y-3">
+          <span className="text-steel uppercase font-display font-bold text-[11px] tracking-wide block">Predicted Fault Type</span>
           <div className="flex items-baseline justify-between">
-            <span className={`text-2xl font-bold ${multiclassObj?.faultType === "HIF" ? "text-red-400" : "text-cyan-300"}`}>
+            <span className={`text-2xl font-bold meter ${multiclassObj?.faultType === "HIF" ? "text-critical" : "text-signal"}`}>
               {multiclassObj?.faultType ?? "Normal"}
             </span>
-            <span className="text-slate-400 text-[11px]">
-              Prob: <strong className="text-emerald-400">{((multiclassObj?.faultTypeProbability ?? 1) * 100).toFixed(0)}%</strong>
+            <span className="text-steel text-[11px]">
+              Prob: <strong className="text-nominal">{((multiclassObj?.faultTypeProbability ?? 1) * 100).toFixed(0)}%</strong>
             </span>
           </div>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-steel-light">
             Trained Classes: Normal, LG, LLG, LLLG, LL, HIF, CS, LS
           </p>
         </div>
 
         {/* Communication State */}
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-3">
-          <span className="text-slate-400 uppercase font-bold text-[11px] block">Communication State</span>
+        <div className="bg-panel border border-line rounded-lg p-4 font-mono text-xs space-y-3">
+          <span className="text-steel uppercase font-display font-bold text-[11px] tracking-wide block">Communication State</span>
           <div className="flex items-center gap-2">
-            <span className={`w-3 h-3 rounded-full ${commStateObj === "REMOTE_CONNECTED" ? "bg-emerald-400" : commStateObj === "LOCAL_FALLBACK" ? "bg-amber-400 animate-pulse" : "bg-slate-500"}`} />
-            <span className={`text-base font-bold ${commStateObj === "REMOTE_CONNECTED" ? "text-emerald-400" : commStateObj === "LOCAL_FALLBACK" ? "text-amber-400" : "text-slate-400"}`}>
+            <span className={`w-3 h-3 rounded-full ${commStateObj === "REMOTE_CONNECTED" ? "bg-nominal" : commStateObj === "LOCAL_FALLBACK" ? "bg-warning" : "bg-offline"}`} />
+            <span className={`text-base font-bold meter ${commStateObj === "REMOTE_CONNECTED" ? "text-nominal" : commStateObj === "LOCAL_FALLBACK" ? "text-warning" : "text-offline"}`}>
               {commStateObj === "REMOTE_CONNECTED" ? "REMOTE CONNECTED" : commStateObj === "LOCAL_FALLBACK" ? "LOCAL FALLBACK" : "UNAVAILABLE"}
             </span>
           </div>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-steel-light">
             {commStateObj === "LOCAL_FALLBACK"
               ? "ESP8266 local fallback anomaly detection active."
               : "ESP8266 transmitting telemetry to FastAPI."}
@@ -233,21 +236,22 @@ export default function DashboardPage() {
         </div>
 
         {/* Safe Isolation Simulation Card */}
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-3 flex flex-col justify-between">
+        <div className="bg-panel border border-line rounded-lg p-4 font-mono text-xs space-y-3 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-slate-400 uppercase font-bold text-[11px]">Software Isolation</span>
-              <span className="px-1.5 py-0.5 rounded text-[9px] bg-slate-900 text-purple-400 border border-purple-800">
+              <span className="text-steel uppercase font-display font-bold text-[11px] tracking-wide">Software Isolation</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] bg-isolation-light text-isolation border border-isolation/20">
                 SIMULATION
               </span>
             </div>
 
-            <span className={`text-sm font-bold block ${isolationObj?.status === "ISOLATED" ? "text-purple-400" : isolationObj?.status === "ISOLATION_RECOMMENDED" ? "text-amber-400" : "text-emerald-400"}`}>
+            <span className={`text-sm font-bold meter flex items-center gap-1.5 ${isolationObj?.status === "ISOLATED" ? "text-isolation" : isolationObj?.status === "ISOLATION_RECOMMENDED" ? "text-warning" : "text-nominal"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isolationObj?.status === "ISOLATED" ? "bg-isolation" : isolationObj?.status === "ISOLATION_RECOMMENDED" ? "bg-warning" : "bg-nominal"}`} />
               {isolationObj?.status === "ISOLATED"
-                ? "🔴 SECTION ISOLATED (SIM)"
+                ? "SECTION ISOLATED (SIM)"
                 : isolationObj?.status === "ISOLATION_RECOMMENDED"
-                  ? "🟡 ISOLATION RECOMMENDED"
-                  : "🟢 NOT ISOLATED"}
+                  ? "ISOLATION RECOMMENDED"
+                  : "NOT ISOLATED"}
             </span>
           </div>
 
@@ -255,20 +259,20 @@ export default function DashboardPage() {
             {isolationObj?.status === "ISOLATED" ? (
               <button
                 onClick={handleResetIsolation}
-                className="w-full py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold transition-all"
+                className="w-full py-1.5 rounded bg-paper hover:bg-line text-signal border border-signal/30 text-[11px] font-display font-bold uppercase tracking-wide transition-colors"
               >
-                [ RESET ISOLATION ]
+                [ Reset Isolation ]
               </button>
             ) : (
               <button
                 onClick={() => setIsIsolationModalOpen(true)}
-                className={`w-full py-1.5 rounded text-[11px] font-bold transition-all border ${
+                className={`w-full py-1.5 rounded text-[11px] font-display font-bold uppercase tracking-wide transition-colors border ${
                   riskObj?.level === "CRITICAL"
-                    ? "bg-red-600 hover:bg-red-500 text-white border-red-500 shadow-md shadow-red-600/20"
-                    : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                    ? "bg-critical hover:bg-critical/90 text-white border-critical"
+                    : "bg-paper hover:bg-line text-steel border-line"
                 }`}
               >
-                [ SIMULATE ISOLATION ]
+                [ Simulate Isolation ]
               </button>
             )}
           </div>

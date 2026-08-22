@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, IBM_Plex_Sans_Condensed } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -11,6 +11,12 @@ const inter = Inter({
 
 const jetBrainsMono = JetBrains_Mono({
   variable: "--font-mono",
+  subsets: ["latin"],
+});
+
+const plexCondensed = IBM_Plex_Sans_Condensed({
+  variable: "--font-plex-condensed",
+  weight: ["500", "600", "700"],
   subsets: ["latin"],
 });
 
@@ -28,9 +34,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetBrainsMono.variable} h-full`}
+      className={`${inter.variable} ${jetBrainsMono.variable} ${plexCondensed.variable} h-full`}
     >
-      <body className="h-full bg-slate-950 text-slate-100 flex flex-col antialiased">
+      <body className="h-full bg-paper text-ink flex flex-col antialiased">
         {/* Top header */}
         <Header />
 

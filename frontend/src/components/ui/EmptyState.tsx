@@ -10,10 +10,12 @@ export default function EmptyState({
   description,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-500">
-      <span className="text-3xl">{icon}</span>
-      <p className="text-sm font-medium text-slate-400">{title}</p>
-      {description && <p className="text-xs text-slate-600">{description}</p>}
+    <div className="flex flex-col items-center justify-center gap-2 py-12 text-steel-light">
+      <span className="text-2xl text-steel">{icon}</span>
+      <p className="text-sm font-display font-medium uppercase tracking-wide text-steel">
+        {title}
+      </p>
+      {description && <p className="text-xs text-steel-light">{description}</p>}
     </div>
   );
 }

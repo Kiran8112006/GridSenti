@@ -33,14 +33,14 @@ export function timeAgo(iso: string): string {
 export function nodeStatusColor(status: NodeStatus): string {
   switch (status) {
     case "ONLINE":
-      return "text-emerald-400";
+      return "text-nominal";
     case "WARNING":
-      return "text-amber-400";
+      return "text-warning";
     case "OFFLINE":
-      return "text-slate-500";
+      return "text-offline";
     case "UNKNOWN":
     default:
-      return "text-slate-400";
+      return "text-steel";
   }
 }
 
@@ -50,13 +50,13 @@ export function nodeStatusColor(status: NodeStatus): string {
 export function nodeStatusDot(status: NodeStatus): string {
   switch (status) {
     case "ONLINE":
-      return "bg-emerald-400";
+      return "bg-nominal";
     case "WARNING":
-      return "bg-amber-400";
+      return "bg-warning";
     case "OFFLINE":
-      return "bg-slate-600";
+      return "bg-offline";
     default:
-      return "bg-slate-400";
+      return "bg-steel-light";
   }
 }
 
@@ -66,12 +66,12 @@ export function nodeStatusDot(status: NodeStatus): string {
 export function alertSeverityColor(severity: AlertSeverity): string {
   switch (severity) {
     case "CRITICAL":
-      return "text-red-400";
+      return "text-critical";
     case "WARNING":
-      return "text-amber-400";
+      return "text-warning";
     case "INFO":
     default:
-      return "text-sky-400";
+      return "text-signal";
   }
 }
 
@@ -81,13 +81,13 @@ export function alertSeverityColor(severity: AlertSeverity): string {
 export function systemStateColor(state: SystemState): string {
   switch (state) {
     case "NOMINAL":
-      return "text-emerald-400";
+      return "text-nominal";
     case "DEGRADED":
-      return "text-amber-400";
+      return "text-warning";
     case "CRITICAL":
-      return "text-red-400";
+      return "text-critical";
     default:
-      return "text-slate-400";
+      return "text-steel";
   }
 }
 

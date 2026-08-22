@@ -6,6 +6,20 @@ import { useGridSentiData } from "@/hooks/useGridSentiData";
 import { APP_CONFIG } from "@/config/app.config";
 import { timeAgo } from "@/utils";
 
+function ConnectionBadge({ isConnected }: { isConnected: boolean }) {
+  return isConnected ? (
+    <span className="pl-2.5 pr-2 py-0.5 border-l-4 border-nominal bg-nominal-light text-nominal text-xs font-display font-semibold uppercase tracking-wide flex items-center gap-1.5">
+      <span className="w-1.5 h-1.5 rounded-full bg-nominal" />
+      Live Backend Connected
+    </span>
+  ) : (
+    <span className="pl-2.5 pr-2 py-0.5 border-l-4 border-critical bg-critical-light text-critical text-xs font-display font-semibold uppercase tracking-wide flex items-center gap-1.5">
+      <span className="w-1.5 h-1.5 rounded-full bg-critical" />
+      Backend Disconnected — Stale Data
+    </span>
+  );
+}
+
 export default function NodesPage() {
   const { nodes, isConnected, lastUpdated } = useGridSentiData();
 
@@ -15,30 +29,20 @@ export default function NodesPage() {
   const offlineNodes = nodes.filter((n) => n.status === "OFFLINE").length;
 
   return (
-    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto font-sans">
+    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto">
       {/* ── Page Header ──────────────────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <span>◉</span> Monitoring Nodes Registry
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-display font-semibold text-ink tracking-wide uppercase flex items-center gap-2">
+              <span className="text-signal">◉</span> Monitoring Nodes Registry
             </h1>
-            {isConnected ? (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                LIVE BACKEND CONNECTED
-              </span>
-            ) : (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-red-950 text-red-400 border border-red-800 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-red-500" />
-                BACKEND DISCONNECTED — STALE DATA
-              </span>
-            )}
+            <ConnectionBadge isConnected={isConnected} />
           </div>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-steel text-sm mt-0.5">
             Real-time edge node telemetry, communication resilience, risk &amp; isolation statuses · GET /api/nodes
             {lastUpdated && (
-              <span className="text-slate-500 text-xs ml-2 font-mono">
+              <span className="text-steel-light text-xs ml-2 font-mono meter">
                 (Last sync: {lastUpdated})
               </span>
             )}
@@ -49,33 +53,33 @@ export default function NodesPage() {
       {/* ── Node Status Summary ─────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatusCard title="Total Registered" value={totalNodes} status="neutral" icon="◉" />
-        <StatusCard title="Active (Online)" value={onlineNodes} status="nominal" icon="🟢" />
-        <StatusCard title="Imbalance Warning" value={warningNodes} status="warning" icon="🟡" />
-        <StatusCard title="Heartbeat Timeout" value={offlineNodes} status="offline" icon="⚫" />
+        <StatusCard title="Active (Online)" value={onlineNodes} status="nominal" icon="●" />
+        <StatusCard title="Imbalance Warning" value={warningNodes} status="warning" icon="●" />
+        <StatusCard title="Heartbeat Timeout" value={offlineNodes} status="offline" icon="●" />
       </div>
 
       {/* ── Node Cards Grid ─────────────────────────────────── */}
       <NodeGrid nodes={nodes} />
 
       {/* ── Detailed Node Inventory Table ───────────────────── */}
-      <section className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
-          <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2 font-mono">
-            <span>📋</span> Node Inventory, Resilience &amp; Safety Register
+      <section className="bg-panel border border-line rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-line flex items-center justify-between">
+          <h2 className="text-steel text-sm font-display font-semibold uppercase tracking-wide flex items-center gap-2">
+            <span className="text-signal">▤</span> Node Inventory, Resilience &amp; Safety Register
           </h2>
-          <span className="text-slate-500 text-xs font-mono">
+          <span className="text-steel-light text-xs font-mono meter">
             Timeout Threshold: {APP_CONFIG.heartbeatTimeoutMs / 1000}s
           </span>
         </div>
 
         {nodes.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 text-sm font-mono">
+          <div className="p-8 text-center text-steel-light text-sm font-mono">
             {isConnected ? "Awaiting node registration..." : "Backend disconnected. No node data available."}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-700/60">
+              <thead className="bg-paper text-steel-light uppercase tracking-wide text-[11px] border-b border-line">
                 <tr>
                   <th className="py-3 px-4">Node ID</th>
                   <th className="py-3 px-4">Location / Feeder</th>
@@ -87,32 +91,32 @@ export default function NodesPage() {
                   <th className="py-3 px-4">Last Heartbeat</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50 text-slate-300">
+              <tbody className="divide-y divide-line text-steel">
                 {nodes.map((node) => (
-                  <tr key={node.nodeId || node.id} className="hover:bg-slate-700/30 transition-colors">
-                    <td className="py-3 px-4 font-bold text-cyan-300">
+                  <tr key={node.nodeId || node.id} className="hover:bg-paper transition-colors">
+                    <td className="py-3 px-4 font-bold meter text-signal">
                       {node.nodeId || node.id}
                     </td>
-                    <td className="py-3 px-4 text-slate-400">
+                    <td className="py-3 px-4 text-steel">
                       {node.location ?? node.feeder ?? "Unmapped"}
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[11px] ${
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-semibold text-[11px] border ${
                           node.status === "ONLINE"
-                            ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                            ? "bg-nominal-light text-nominal border-nominal/20"
                             : node.status === "WARNING"
-                              ? "bg-amber-950 text-amber-400 border border-amber-800"
-                              : "bg-slate-900 text-slate-500 border border-slate-700"
+                              ? "bg-warning-light text-warning border-warning/20"
+                              : "bg-offline-light text-offline border-offline/20"
                         }`}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
                             node.status === "ONLINE"
-                              ? "bg-emerald-400"
+                              ? "bg-nominal"
                               : node.status === "WARNING"
-                                ? "bg-amber-400"
-                                : "bg-slate-500"
+                                ? "bg-warning"
+                                : "bg-offline"
                           }`}
                         />
                         {node.status}
@@ -120,12 +124,12 @@ export default function NodesPage() {
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`font-bold ${
+                        className={`font-bold meter ${
                           node.communicationState === "REMOTE_CONNECTED"
-                            ? "text-emerald-400"
+                            ? "text-nominal"
                             : node.communicationState === "LOCAL_FALLBACK"
-                              ? "text-amber-400"
-                              : "text-slate-500"
+                              ? "text-warning"
+                              : "text-offline"
                         }`}
                       >
                         {node.communicationState ?? "REMOTE_CONNECTED"}
@@ -133,34 +137,34 @@ export default function NodesPage() {
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`font-bold ${
+                        className={`font-bold meter ${
                           node.isolationState?.status === "ISOLATED"
-                            ? "text-purple-400"
+                            ? "text-isolation"
                             : node.isolationState?.status === "ISOLATION_RECOMMENDED"
-                              ? "text-amber-400"
-                              : "text-emerald-400"
+                              ? "text-warning"
+                              : "text-nominal"
                         }`}
                       >
                         {node.isolationState?.status ?? "NOT_ISOLATED"}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-bold text-cyan-300">
+                    <td className="py-3 px-4 font-bold meter text-signal">
                       {node.faultClassification?.faultType ?? (node.lastDetection === "HIF" ? "HIF" : "Normal")}
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`font-bold ${
+                        className={`font-bold meter ${
                           node.risk?.level === "CRITICAL"
-                            ? "text-red-400"
+                            ? "text-critical"
                             : node.risk?.level === "MEDIUM"
-                              ? "text-amber-400"
-                              : "text-emerald-400"
+                              ? "text-warning"
+                              : "text-nominal"
                         }`}
                       >
                         {node.risk?.level ?? "LOW"} ({node.risk?.score ?? 0}/100)
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-slate-400">
+                    <td className="py-3 px-4 text-steel-light">
                       {node.lastHeartbeat ? timeAgo(node.lastHeartbeat) : "Never"}
                     </td>
                   </tr>

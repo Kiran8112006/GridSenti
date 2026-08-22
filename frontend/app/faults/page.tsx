@@ -6,6 +6,20 @@ import HIFStatusPanel from "@/components/dashboard/HIFStatusPanel";
 import FaultLocation from "@/components/dashboard/FaultLocation";
 import PublicWarningPanel from "@/components/dashboard/PublicWarningPanel";
 
+function ConnectionBadge({ isConnected }: { isConnected: boolean }) {
+  return isConnected ? (
+    <span className="pl-2.5 pr-2 py-0.5 border-l-4 border-nominal bg-nominal-light text-nominal text-xs font-display font-semibold uppercase tracking-wide flex items-center gap-1.5">
+      <span className="w-1.5 h-1.5 rounded-full bg-nominal" />
+      Live Backend Connected
+    </span>
+  ) : (
+    <span className="pl-2.5 pr-2 py-0.5 border-l-4 border-critical bg-critical-light text-critical text-xs font-display font-semibold uppercase tracking-wide flex items-center gap-1.5">
+      <span className="w-1.5 h-1.5 rounded-full bg-critical" />
+      Backend Disconnected — Stale Data
+    </span>
+  );
+}
+
 export default function FaultsPage() {
   const { latestDetection, events, publicWarnings, isConnected, lastUpdated, refresh } = useGridSentiData();
 
@@ -29,30 +43,20 @@ export default function FaultsPage() {
   const hifReasons = detectionObj?.reasons ?? [];
 
   return (
-    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto font-sans">
+    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto">
       {/* ── Header ────────────────────────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <span>⚡</span> Faults &amp; Safety Response Intelligence Log
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-display font-semibold text-ink tracking-wide uppercase flex items-center gap-2">
+              <span className="text-warning">▲</span> Faults &amp; Safety Response Intelligence Log
             </h1>
-            {isConnected ? (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                LIVE BACKEND CONNECTED
-              </span>
-            ) : (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-red-950 text-red-400 border border-red-800 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-red-500" />
-                BACKEND DISCONNECTED — STALE DATA
-              </span>
-            )}
+            <ConnectionBadge isConnected={isConnected} />
           </div>
-          <p className="text-slate-400 text-sm mt-1 font-mono">
+          <p className="text-steel text-sm mt-0.5">
             Multi-class classification, software isolation &amp; public hazard warnings · GET /api/detection/latest
             {lastUpdated && (
-              <span className="text-slate-500 text-xs ml-2">
+              <span className="text-steel-light text-xs ml-2 font-mono meter">
                 (Last sync: {lastUpdated})
               </span>
             )}
@@ -60,8 +64,8 @@ export default function FaultsPage() {
         </div>
 
         {/* Localization Disclaimer Banner */}
-        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2.5 text-amber-300 text-xs max-w-md font-mono">
-          <span className="text-base shrink-0">📍</span>
+        <div className="flex items-center gap-2.5 bg-warning-light border-l-4 border-warning rounded-r-md pl-3 pr-4 py-2 text-warning text-xs max-w-md">
+          <span className="text-sm shrink-0">◎</span>
           <span>
             {localizationObj?.disclaimer ?? "Current prototype provides node-level identification, not true multi-point section fault localization."}
           </span>
@@ -86,73 +90,73 @@ export default function FaultsPage() {
       </div>
 
       {/* ── Fault Intelligence & Safety Matrix Card ─────────── */}
-      <section className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 space-y-4 font-mono text-xs">
-        <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
-          <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
-            <span>🧠</span> Multi-Class Fault &amp; Safety Response Output
+      <section className="bg-panel border border-line rounded-lg p-5 space-y-4 font-mono text-xs">
+        <div className="flex items-center justify-between border-b border-line pb-3">
+          <h2 className="text-steel text-sm font-display font-semibold uppercase tracking-wide flex items-center gap-2">
+            <span className="text-signal">◈</span> Multi-Class Fault &amp; Safety Response Output
           </h2>
           {latestDetection?.timestamp && (
-            <span className="text-slate-400 text-xs font-mono">
+            <span className="text-steel-light text-xs font-mono">
               Timestamp: {latestDetection.timestamp}
             </span>
           )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50">
-            <span className="text-slate-500 block mb-1">Multi-Class Fault Type</span>
-            <span className="text-base font-bold text-cyan-300">
+          <div className="bg-paper p-3.5 rounded-md border border-line">
+            <span className="text-steel-light block mb-1">Multi-Class Fault Type</span>
+            <span className="text-base font-bold meter text-signal">
               {multiclassObj?.faultType ?? "Normal"}
             </span>
-            <div className="mt-2 text-[11px] text-slate-400">
-              Prob: <span className="text-emerald-400 font-bold">{((multiclassObj?.faultTypeProbability ?? 1) * 100).toFixed(1)}%</span>
+            <div className="mt-2 text-[11px] text-steel">
+              Prob: <span className="text-nominal font-bold">{((multiclassObj?.faultTypeProbability ?? 1) * 100).toFixed(1)}%</span>
             </div>
           </div>
 
-          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50">
-            <span className="text-slate-500 block mb-1">Risk Level &amp; Score</span>
-            <span className={`text-base font-bold ${riskObj?.level === "CRITICAL" ? "text-red-400" : riskObj?.level === "MEDIUM" ? "text-amber-400" : "text-emerald-400"}`}>
+          <div className="bg-paper p-3.5 rounded-md border border-line">
+            <span className="text-steel-light block mb-1">Risk Level &amp; Score</span>
+            <span className={`text-base font-bold meter ${riskObj?.level === "CRITICAL" ? "text-critical" : riskObj?.level === "MEDIUM" ? "text-warning" : "text-nominal"}`}>
               {riskObj?.level ?? "LOW"} ({riskObj?.score ?? 0}/100)
             </span>
-            <div className="mt-2 text-[11px] text-slate-400">
-              Persistence: <span className="text-amber-300 font-bold">{riskObj?.persistenceCount ?? 0} pkts</span>
+            <div className="mt-2 text-[11px] text-steel">
+              Persistence: <span className="text-warning font-bold">{riskObj?.persistenceCount ?? 0} pkts</span>
             </div>
           </div>
 
-          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50">
-            <span className="text-slate-500 block mb-1">Communication State</span>
-            <span className={`text-sm font-bold ${commStateObj === "REMOTE_CONNECTED" ? "text-emerald-400" : commStateObj === "LOCAL_FALLBACK" ? "text-amber-400" : "text-slate-400"}`}>
+          <div className="bg-paper p-3.5 rounded-md border border-line">
+            <span className="text-steel-light block mb-1">Communication State</span>
+            <span className={`text-sm font-bold meter ${commStateObj === "REMOTE_CONNECTED" ? "text-nominal" : commStateObj === "LOCAL_FALLBACK" ? "text-warning" : "text-offline"}`}>
               {commStateObj}
             </span>
-            <div className="mt-2 text-[11px] text-slate-400">
+            <div className="mt-2 text-[11px] text-steel">
               {commStateObj === "LOCAL_FALLBACK" ? "Local Fallback Active" : "Remote Telemetry"}
             </div>
           </div>
 
-          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50">
-            <span className="text-slate-500 block mb-1">Software Isolation</span>
-            <span className={`text-sm font-bold ${isolationObj?.status === "ISOLATED" ? "text-purple-400" : isolationObj?.status === "ISOLATION_RECOMMENDED" ? "text-amber-400" : "text-emerald-400"}`}>
+          <div className="bg-paper p-3.5 rounded-md border border-line">
+            <span className="text-steel-light block mb-1">Software Isolation</span>
+            <span className={`text-sm font-bold meter ${isolationObj?.status === "ISOLATED" ? "text-isolation" : isolationObj?.status === "ISOLATION_RECOMMENDED" ? "text-warning" : "text-nominal"}`}>
               {isolationObj?.status ?? "NOT_ISOLATED"}
             </span>
-            <div className="mt-2 text-[11px] text-slate-400">
+            <div className="mt-2 text-[11px] text-steel">
               Software Simulation
             </div>
           </div>
 
-          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50">
-            <span className="text-slate-500 block mb-1">Recommended Action</span>
-            <span className="text-xs font-bold text-amber-300">
+          <div className="bg-paper p-3.5 rounded-md border border-line">
+            <span className="text-steel-light block mb-1">Recommended Action</span>
+            <span className="text-xs font-bold text-warning">
               {riskObj?.recommendedAction ?? "CONTINUE_MONITORING"}
             </span>
           </div>
         </div>
 
         {/* Explanation Summary Box */}
-        <div className="bg-slate-900/80 p-4 rounded-lg border border-slate-700/50 space-y-2">
-          <span className="text-cyan-400 font-bold block uppercase text-[11px]">
+        <div className="bg-paper p-4 rounded-md border border-line space-y-2">
+          <span className="text-signal font-display font-bold block uppercase text-[11px] tracking-wide">
             Deterministic Evidence Explanation:
           </span>
-          <p className="text-slate-300 text-xs leading-relaxed">
+          <p className="text-steel text-xs leading-relaxed">
             {explanationObj?.summary ?? "GridSenti verified nominal operating conditions. DWT energy feature ratios remain stable within steady-state bounds."}
           </p>
         </div>

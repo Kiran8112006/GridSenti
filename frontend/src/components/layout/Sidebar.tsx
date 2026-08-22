@@ -5,19 +5,19 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: "⬡" },
+  { href: "/", label: "Dashboard", icon: "▣" },
   { href: "/nodes", label: "Nodes", icon: "◉" },
-  { href: "/faults", label: "Faults", icon: "⚡" },
-  { href: "/alerts", label: "Alerts", icon: "🔔" },
-  { href: "/telemetry", label: "Telemetry", icon: "📡" },
+  { href: "/faults", label: "Faults", icon: "▲" },
+  { href: "/alerts", label: "Alerts", icon: "◆" },
+  { href: "/telemetry", label: "Telemetry", icon: "∿" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-14 lg:w-52 bg-slate-900 border-r border-slate-700/60 flex flex-col shrink-0">
-      <nav className="flex-1 py-4 space-y-1 px-2">
+    <aside className="w-14 lg:w-52 bg-panel border-r border-line flex flex-col shrink-0">
+      <nav className="flex-1 py-4 space-y-0.5 px-2">
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
           return (
@@ -25,13 +25,13 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-3 pl-3 pr-3 py-2.5 border-l-2 text-sm font-display font-medium uppercase tracking-wide transition-colors",
                 active
-                  ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800",
+                  ? "bg-signal-light text-signal border-signal"
+                  : "text-steel border-transparent hover:text-ink hover:bg-paper hover:border-line-strong",
               )}
             >
-              <span className="text-base w-5 text-center shrink-0">
+              <span className="text-sm w-5 text-center shrink-0 font-normal">
                 {item.icon}
               </span>
               <span className="hidden lg:block">{item.label}</span>
@@ -40,10 +40,10 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="p-3 border-t border-slate-700/60">
-        <div className="text-slate-500 text-xs text-center lg:text-left">
-          <span className="hidden lg:block">v0.1.0-prototype</span>
-          <span className="lg:hidden">v0.1</span>
+      <div className="p-3 border-t border-line">
+        <div className="text-steel-light text-xs font-mono meter text-center lg:text-left">
+          <span className="hidden lg:block">v0.2.0-prototype</span>
+          <span className="lg:hidden">v0.2</span>
         </div>
       </div>
     </aside>
