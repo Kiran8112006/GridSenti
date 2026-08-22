@@ -2,11 +2,13 @@
 GridSenti — API Routes
 ======================
 FastAPI endpoints for live edge telemetry ingestion, node status monitoring,
-HIF detection results, multi-class predictions, risk scores, localization,
-explanations, alerts, and system event timeline.
+HIF detection, multi-class predictions, risk scores, localization,
+explanations, safe isolation simulation, public hazard warning simulation,
+alerts, and system event timeline.
 """
 
 from typing import List, Optional
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, Path, Query, status
 
 from app.schemas.telemetry import (
@@ -14,13 +16,21 @@ from app.schemas.telemetry import (
     TelemetryResponse,
     DetectionResultSchema,
     NodeStatusSchema,
+    IsolationStatusSchema,
+    PublicWarningSchema,
     AlertSchema,
     EventSchema,
 )
 from app.detection.hif_detector import detect_hif, get_model_status
 from app.services.state_service import state_service, HEARTBEAT_TIMEOUT_SECONDS
+from app.services.isolation_service import isolation_service
+from app.services.public_warning_service import public_warning_service
 
 router = APIRouter()
+
+
+class NodeActionRequest(BaseModel):
+    nodeId: str = Field(..., description="Target node identifier", example="GS-NODE-001")
 
 
 # ── 1. Telemetry Ingestion ──────────────────────────────────────────────────
@@ -35,10 +45,9 @@ def ingest_telemetry(payload: TelemetryRequest):
     """
     Ingest three-phase DWT energy telemetry (EA, EB, EC) from an edge node,
     invoke the HIF detection engine (Rule Engine + Binary Random Forest),
-    multi-class classifier, risk engine, localization, and explanation service,
+    multi-class classifier, risk engine, localization, explanation, isolation check,
     update in-memory node heartbeats and alerts, and return combined detection output.
     """
-    # Invoke HIF Detector
     raw_detection = detect_hif(ea=payload.ea, eb=payload.eb, ec=payload.ec)
 
     if not raw_detection.get("model_loaded", False) and raw_detection.get("error"):
@@ -47,7 +56,6 @@ def ingest_telemetry(payload: TelemetryRequest):
             detail=f"HIF Detection Engine error: {raw_detection['error']}",
         )
 
-    # Format detection result schema
     rule_res = raw_detection.get("rule_engine") or {}
     detection_schema = DetectionResultSchema(
         classification=raw_detection.get("classification") or "NON_HIF",
@@ -57,7 +65,6 @@ def ingest_telemetry(payload: TelemetryRequest):
         reasons=rule_res.get("reasons", []),
     )
 
-    # Update state service (runs multi-class, risk, localization, explanation, and updates node state)
     res_dict = state_service.update_telemetry(payload, detection_schema)
 
     return TelemetryResponse(
@@ -69,6 +76,9 @@ def ingest_telemetry(payload: TelemetryRequest):
         risk=res_dict["risk"],
         localization=res_dict["localization"],
         explanation=res_dict["explanation"],
+        communicationState=res_dict["communicationState"],
+        isolationState=res_dict["isolationState"],
+        activeWarning=res_dict["activeWarning"],
         status=res_dict["status"],
     )
 
@@ -109,7 +119,91 @@ def get_node_by_id(
     return node
 
 
-# ── 3. Detection Results ─────────────────────────────────────────────────────
+# ── 3. Isolation Simulation ──────────────────────────────────────────────────
+
+@router.get(
+    "/isolation",
+    summary="Get current simulated feeder isolation statuses across nodes",
+)
+def get_isolation_statuses():
+    """Return simulated feeder isolation states."""
+    return isolation_service.get_all_isolation_statuses()
+
+
+@router.post(
+    "/isolation/simulate",
+    response_model=IsolationStatusSchema,
+    summary="Simulate feeder line section isolation (SOFTWARE SIMULATION ONLY)",
+)
+def simulate_isolation(req: NodeActionRequest):
+    """Mark specified node's adjacent feeder section as ISOLATED (Software simulation only)."""
+    node = state_service.get_node(req.nodeId)
+    if not node:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Node '{req.nodeId}' not found",
+        )
+    res = isolation_service.simulate_isolation(req.nodeId, state_service_ref=state_service)
+    return IsolationStatusSchema(**res)
+
+
+@router.post(
+    "/isolation/reset",
+    response_model=IsolationStatusSchema,
+    summary="Reset simulated feeder line section isolation to NOT_ISOLATED",
+)
+def reset_isolation(req: NodeActionRequest):
+    """Reset specified node's feeder section isolation status to NOT_ISOLATED."""
+    res = isolation_service.reset_isolation(req.nodeId, state_service_ref=state_service)
+    return IsolationStatusSchema(**res)
+
+
+# ── 4. Public Warning Simulation ──────────────────────────────────────────────
+
+@router.get(
+    "/public-warnings",
+    response_model=List[PublicWarningSchema],
+    summary="Get active public hazard warnings",
+)
+def get_public_warnings():
+    """Return list of active simulated public safety warnings."""
+    return [PublicWarningSchema(**w) for w in public_warning_service.get_active_warnings()]
+
+
+@router.post(
+    "/public-warnings/simulate",
+    response_model=PublicWarningSchema,
+    summary="Simulate public hazard warning broadcast for a node",
+)
+def simulate_public_warning(req: NodeActionRequest):
+    """Generate a prototype public safety warning notification for specified node."""
+    node = state_service.get_node(req.nodeId)
+    location = node.location if node else f"Near {req.nodeId}"
+    warning_data = public_warning_service.simulate_warning(
+        node_id=req.nodeId,
+        location=location,
+        state_service_ref=state_service,
+    )
+    return PublicWarningSchema(**warning_data)
+
+
+@router.post(
+    "/public-warnings/{warningId}/resolve",
+    response_model=PublicWarningSchema,
+    summary="Resolve an active simulated public hazard warning",
+)
+def resolve_public_warning(warningId: str = Path(...)):
+    """Mark specified public warning as RESOLVED."""
+    res = public_warning_service.resolve_warning(warning_id=warningId, state_service_ref=state_service)
+    if not res:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Public Warning '{warningId}' not found",
+        )
+    return PublicWarningSchema(**res)
+
+
+# ── 5. Detection Results ─────────────────────────────────────────────────────
 
 @router.get(
     "/detection/latest",
@@ -141,6 +235,7 @@ def get_latest_detection_for_node(nodeId: str = Path(...)):
     return {
         "nodeId": node.nodeId,
         "status": node.status,
+        "communicationState": node.communicationState,
         "lastHeartbeat": node.lastHeartbeat,
         "latestTelemetry": node.latestTelemetry,
         "latestDetectionResult": node.latestDetectionResult,
@@ -148,10 +243,12 @@ def get_latest_detection_for_node(nodeId: str = Path(...)):
         "risk": node.risk,
         "localization": node.localization,
         "explanation": node.explanation,
+        "isolationState": node.isolationState,
+        "activeWarning": node.activeWarning,
     }
 
 
-# ── 4. Alerts & Events ───────────────────────────────────────────────────────
+# ── 6. Alerts & Events ───────────────────────────────────────────────────────
 
 @router.get(
     "/alerts",
@@ -175,7 +272,7 @@ def get_events(
     return state_service.get_events(limit=limit)
 
 
-# ── 5. Health Check ──────────────────────────────────────────────────────────
+# ── 7. Health Check ──────────────────────────────────────────────────────────
 
 @router.get(
     "/health",

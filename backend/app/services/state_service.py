@@ -3,7 +3,7 @@ GridSenti — In-Memory State & Heartbeat Manager
 ===============================================
 Thread-safe in-memory store for node statuses, heartbeats, active alerts,
 latest telemetry, multi-class predictions, risk scores, localization,
-explanations, and system events for the MVP prototype.
+explanations, isolation simulation, public warnings, and system events.
 """
 
 from __future__ import annotations
@@ -20,6 +20,8 @@ from app.schemas.telemetry import (
     RiskSchema,
     LocalizationSchema,
     ExplanationSchema,
+    IsolationStatusSchema,
+    PublicWarningSchema,
     NodeStatusSchema,
     AlertSchema,
     EventSchema,
@@ -29,6 +31,8 @@ from ml.multiclass_predict import predict_multiclass_fault
 from app.services.risk_service import risk_service
 from app.services.localization_service import localization_service
 from app.services.explanation_service import explanation_service
+from app.services.isolation_service import isolation_service
+from app.services.public_warning_service import public_warning_service
 
 # Heartbeat timeout in seconds (configurable, default 10s)
 HEARTBEAT_TIMEOUT_SECONDS = 10.0
@@ -36,7 +40,7 @@ HEARTBEAT_TIMEOUT_SECONDS = 10.0
 
 class StateService:
     def __init__(self):
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
         # Seed initial registered nodes
         self._nodes: Dict[str, dict] = {
@@ -46,6 +50,7 @@ class StateService:
                 "location": "Sector 4 — Main Junction",
                 "feeder": "Feeder Line A",
                 "status": "OFFLINE",
+                "communicationState": "REMOTE_UNAVAILABLE",
                 "lastHeartbeat": None,
                 "lastHeartbeat_epoch": 0.0,
                 "lastDetection": "NORMAL",
@@ -62,6 +67,7 @@ class StateService:
                 "location": "Sector 7 — Industrial Zone",
                 "feeder": "Feeder Line B",
                 "status": "OFFLINE",
+                "communicationState": "REMOTE_UNAVAILABLE",
                 "lastHeartbeat": None,
                 "lastHeartbeat_epoch": 0.0,
                 "lastDetection": "NORMAL",
@@ -78,6 +84,7 @@ class StateService:
                 "location": "Sector 12 — Rural Extension",
                 "feeder": "Feeder Line C",
                 "status": "OFFLINE",
+                "communicationState": "REMOTE_UNAVAILABLE",
                 "lastHeartbeat": None,
                 "lastHeartbeat_epoch": 0.0,
                 "lastDetection": "NORMAL",
@@ -94,6 +101,7 @@ class StateService:
                 "location": "Sector 19 — Substation Outflow",
                 "feeder": "Feeder Line D",
                 "status": "OFFLINE",
+                "communicationState": "REMOTE_UNAVAILABLE",
                 "lastHeartbeat": None,
                 "lastHeartbeat_epoch": 0.0,
                 "lastDetection": "NORMAL",
@@ -113,11 +121,18 @@ class StateService:
                 "nodeId": "SYSTEM",
                 "type": "SYSTEM",
                 "severity": "INFO",
-                "message": "GridSenti backend state service initialized",
+                "message": "GridSenti backend state service initialized with Batch 2 resilience features",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
+                "simulated": True,
                 "details": None,
             }
         ]
+
+    def add_event(self, event_dict: dict):
+        with self._lock:
+            if "simulated" not in event_dict:
+                event_dict["simulated"] = True
+            self._events.insert(0, event_dict)
 
     # ── Node & Telemetry Update ───────────────────────────────────────────────
 
@@ -178,6 +193,24 @@ class StateService:
             )
             exp_schema = ExplanationSchema(**exp_res)
 
+            # 5. Isolation Recommendation Check
+            if risk_res["level"] == "CRITICAL":
+                isolation_service.recommend_isolation(node_id)
+            else:
+                # Auto-clear ISOLATION_RECOMMENDED when no longer critical
+                # Does NOT touch explicit ISOLATED state
+                isolation_service.clear_recommendation(node_id)
+
+            iso_res = isolation_service.get_isolation_status(node_id)
+            iso_schema = IsolationStatusSchema(**iso_res)
+
+            # 6. Public Warning Query
+            active_warnings = [
+                w for w in public_warning_service.get_active_warnings()
+                if w["nodeId"] == node_id
+            ]
+            warning_schema = PublicWarningSchema(**active_warnings[0]) if active_warnings else None
+
             # Register on the fly if new node
             if node_id not in self._nodes:
                 self._nodes[node_id] = {
@@ -186,6 +219,7 @@ class StateService:
                     "location": "Unmapped Sector",
                     "feeder": "Auxiliary Feeder",
                     "status": "ONLINE",
+                    "communicationState": "REMOTE_CONNECTED",
                     "lastHeartbeat": now_iso,
                     "lastHeartbeat_epoch": now_epoch,
                     "lastDetection": detection.classification,
@@ -207,6 +241,7 @@ class StateService:
             node["risk"] = risk_schema.model_dump()
             node["localization"] = loc_schema.model_dump()
             node["explanation"] = exp_schema.model_dump()
+            node["communicationState"] = "REMOTE_CONNECTED"
 
             # Node Status determination
             if risk_res["level"] == "CRITICAL" or detection.classification == "HIF":
@@ -216,7 +251,7 @@ class StateService:
             else:
                 node["status"] = "ONLINE"
 
-            # ── ALERT & RESOLUTION MANAGEMENT POLICY ─────────────────────────
+            # ── ALERT MANAGEMENT ─────────────────────────────────────────────
             active_alert_idx = next(
                 (i for i, a in enumerate(self._alerts) if a["nodeId"] == node_id and not a.get("acknowledged", False)),
                 None,
@@ -231,7 +266,6 @@ class StateService:
                 )
 
                 if active_alert_idx is not None:
-                    # Update existing active alert in-place so timestamp & risk fields remain live!
                     alert_entry = self._alerts[active_alert_idx]
                     alert_entry["severity"] = severity
                     alert_entry["message"] = alert_msg
@@ -240,8 +274,9 @@ class StateService:
                     alert_entry["riskLevel"] = risk_res["level"]
                     alert_entry["riskScore"] = risk_res["score"]
                     alert_entry["recommendedAction"] = risk_res["recommendedAction"]
+                    alert_entry["isolationStatus"] = iso_res["status"]
+                    alert_entry["publicWarningId"] = warning_schema.warningId if warning_schema else None
                 else:
-                    # Create new active alert when transitioning into fault state
                     alert_id = str(uuid.uuid4())
                     alert_entry = {
                         "id": alert_id,
@@ -255,10 +290,11 @@ class StateService:
                         "riskLevel": risk_res["level"],
                         "riskScore": risk_res["score"],
                         "recommendedAction": risk_res["recommendedAction"],
+                        "isolationStatus": iso_res["status"],
+                        "publicWarningId": warning_schema.warningId if warning_schema else None,
                     }
                     self._alerts.insert(0, alert_entry)
 
-                    # Log event
                     self._events.insert(0, {
                         "id": str(uuid.uuid4()),
                         "nodeId": node_id,
@@ -266,18 +302,15 @@ class StateService:
                         "severity": severity,
                         "message": alert_msg,
                         "timestamp": now_iso,
+                        "simulated": True,
                         "details": {
                             "faultType": multiclass_res["faultType"],
                             "riskLevel": risk_res["level"],
                             "riskScore": risk_res["score"],
                             "persistenceCount": risk_res["persistenceCount"],
-                            "reasons": detection.reasons,
-                            "rule_score": detection.rule_score,
-                            "model_probability": detection.model_probability,
                         },
                     })
             else:
-                # Normal condition -> Clear active alert if one existed
                 if active_alert_idx is not None:
                     removed_alert = self._alerts.pop(active_alert_idx)
                     self._events.insert(0, {
@@ -287,6 +320,7 @@ class StateService:
                         "severity": "INFO",
                         "message": f"Grid condition at {node_id} returned to normal state (Risk: LOW, Score: 0.0)",
                         "timestamp": now_iso,
+                        "simulated": True,
                         "details": {"resolved_alert_id": removed_alert["id"]},
                     })
 
@@ -299,6 +333,9 @@ class StateService:
                 "risk": risk_schema,
                 "localization": loc_schema,
                 "explanation": exp_schema,
+                "communicationState": node["communicationState"],
+                "isolationState": iso_schema,
+                "activeWarning": warning_schema,
                 "status": node["status"],
             }
 
@@ -324,8 +361,15 @@ class StateService:
             for node in self._nodes.values():
                 if node["latestDetectionResult"] and node["lastHeartbeat_epoch"] > latest_time:
                     latest_time = node["lastHeartbeat_epoch"]
+                    node_id = node["nodeId"]
+                    iso_res = isolation_service.get_isolation_status(node_id)
+                    active_warnings = [
+                        w for w in public_warning_service.get_active_warnings()
+                        if w["nodeId"] == node_id
+                    ]
+
                     latest = {
-                        "nodeId": node["nodeId"],
+                        "nodeId": node_id,
                         "timestamp": node["lastHeartbeat"],
                         "simulated": node["latestTelemetry"].get("simulated", True) if node["latestTelemetry"] else True,
                         "detection": node["latestDetectionResult"],
@@ -333,13 +377,15 @@ class StateService:
                         "risk": node.get("risk"),
                         "localization": node.get("localization"),
                         "explanation": node.get("explanation"),
+                        "communicationState": node.get("communicationState", "REMOTE_CONNECTED"),
+                        "isolationState": iso_res,
+                        "activeWarning": active_warnings[0] if active_warnings else None,
                         "nodeStatus": node["status"],
                     }
             return latest
 
     def get_alerts(self) -> List[AlertSchema]:
         with self._lock:
-            # Sort active alerts by timestamp descending
             sorted_alerts = sorted(
                 self._alerts,
                 key=lambda a: a.get("timestamp", ""),
@@ -360,24 +406,34 @@ class StateService:
                 elapsed = now_epoch - node["lastHeartbeat_epoch"]
                 if elapsed > timeout_seconds and node["status"] != "OFFLINE":
                     node["status"] = "OFFLINE"
+                    node["communicationState"] = "REMOTE_UNAVAILABLE"
                     risk_service.update_persistence(node_id, is_fault=False)
                     self._events.insert(0, {
                         "id": str(uuid.uuid4()),
                         "nodeId": node_id,
                         "type": "HEARTBEAT_TIMEOUT",
                         "severity": "WARNING",
-                        "message": f"Heartbeat timeout on {node_id} ({elapsed:.1f}s since last packet)",
+                        "message": f"Heartbeat timeout on {node_id} ({elapsed:.1f}s since last packet) — Node OFFLINE",
                         "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "simulated": True,
                         "details": {"elapsed_seconds": round(elapsed, 1)},
                     })
 
     def _format_node(self, node: dict) -> dict:
+        node_id = node["nodeId"]
+        iso_res = isolation_service.get_isolation_status(node_id)
+        active_warnings = [
+            w for w in public_warning_service.get_active_warnings()
+            if w["nodeId"] == node_id
+        ]
+
         return {
-            "nodeId": node["nodeId"],
+            "nodeId": node_id,
             "name": node["name"],
             "location": node["location"],
             "feeder": node["feeder"],
             "status": node["status"],
+            "communicationState": node.get("communicationState", "REMOTE_UNAVAILABLE" if node["status"] == "OFFLINE" else "REMOTE_CONNECTED"),
             "lastHeartbeat": node["lastHeartbeat"],
             "lastDetection": node["lastDetection"],
             "latestTelemetry": node["latestTelemetry"],
@@ -386,6 +442,8 @@ class StateService:
             "risk": node.get("risk"),
             "localization": node.get("localization"),
             "explanation": node.get("explanation"),
+            "isolationState": iso_res,
+            "activeWarning": active_warnings[0] if active_warnings else None,
         }
 
 

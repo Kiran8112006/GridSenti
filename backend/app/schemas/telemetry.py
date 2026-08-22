@@ -1,8 +1,9 @@
 """
-GridSenti — Telemetry & Node Schemas
-====================================
+GridSenti — Telemetry, Node & Safety Schemas
+============================================
 Pydantic schemas for API requests, telemetry payloads, node statuses,
-alerts, risk analysis, localization, and system events.
+alerts, risk analysis, localization, explanations, software isolation,
+and public safety warning simulations.
 """
 
 from __future__ import annotations
@@ -59,6 +60,27 @@ class ExplanationSchema(BaseModel):
     recommendedAction: str = Field(..., description="Recommended utility action")
 
 
+class IsolationStatusSchema(BaseModel):
+    nodeId: str = Field(..., description="Node ID for isolation status")
+    status: str = Field(..., description="NOT_ISOLATED, ISOLATION_RECOMMENDED, ISOLATED")
+    simulated: bool = Field(True, description="Software simulation indicator")
+    timestamp: str = Field(..., description="Timestamp of isolation status update")
+    message: str = Field(..., description="Human-readable isolation status message")
+
+
+class PublicWarningSchema(BaseModel):
+    warningId: str = Field(..., description="Unique warning ID")
+    nodeId: str = Field(..., description="Node ID associated with hazard warning")
+    severity: str = Field("CRITICAL", description="Warning severity")
+    title: str = Field(..., description="Warning title")
+    message: str = Field(..., description="Warning message body")
+    location: str = Field(..., description="Hazard location")
+    timestamp: str = Field(..., description="Warning timestamp")
+    simulated: bool = Field(True, description="Simulation indicator")
+    status: str = Field("ACTIVE", description="ACTIVE or RESOLVED")
+    resolvedAt: Optional[str] = None
+
+
 class TelemetryResponse(BaseModel):
     nodeId: str
     timestamp: str
@@ -68,6 +90,9 @@ class TelemetryResponse(BaseModel):
     risk: Optional[RiskSchema] = None
     localization: Optional[LocalizationSchema] = None
     explanation: Optional[ExplanationSchema] = None
+    communicationState: str = Field("REMOTE_CONNECTED", description="REMOTE_CONNECTED, LOCAL_FALLBACK, REMOTE_UNAVAILABLE")
+    isolationState: Optional[IsolationStatusSchema] = None
+    activeWarning: Optional[PublicWarningSchema] = None
     status: str
 
 
@@ -76,7 +101,8 @@ class NodeStatusSchema(BaseModel):
     name: str
     location: str
     feeder: str
-    status: str  # ONLINE, OFFLINE, WARNING
+    status: str  # ONLINE, WARNING, OFFLINE
+    communicationState: str = Field("REMOTE_CONNECTED", description="REMOTE_CONNECTED, LOCAL_FALLBACK, REMOTE_UNAVAILABLE")
     lastHeartbeat: Optional[str] = None
     lastDetection: Optional[str] = None
     latestTelemetry: Optional[TelemetryRequest] = None
@@ -85,6 +111,8 @@ class NodeStatusSchema(BaseModel):
     risk: Optional[RiskSchema] = None
     localization: Optional[LocalizationSchema] = None
     explanation: Optional[ExplanationSchema] = None
+    isolationState: Optional[IsolationStatusSchema] = None
+    activeWarning: Optional[PublicWarningSchema] = None
 
 
 class AlertSchema(BaseModel):
@@ -99,13 +127,16 @@ class AlertSchema(BaseModel):
     riskLevel: Optional[str] = None
     riskScore: Optional[float] = None
     recommendedAction: Optional[str] = None
+    isolationStatus: Optional[str] = None
+    publicWarningId: Optional[str] = None
 
 
 class EventSchema(BaseModel):
     id: str
     nodeId: str
-    type: str  # HIF_DETECTED, FAULT_DETECTED, HEARTBEAT_TIMEOUT, SYSTEM
+    type: str  # HIF_DETECTED, FAULT_DETECTED, HEARTBEAT_TIMEOUT, LOCAL_FALLBACK_STARTED, ISOLATION_SIMULATED, etc.
     severity: str  # CRITICAL, WARNING, INFO
     message: str
     timestamp: str
+    simulated: Optional[bool] = True
     details: Optional[Dict] = None

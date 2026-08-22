@@ -4,15 +4,18 @@ import { useGridSentiData } from "@/hooks/useGridSentiData";
 import EventTimeline from "@/components/dashboard/EventTimeline";
 import HIFStatusPanel from "@/components/dashboard/HIFStatusPanel";
 import FaultLocation from "@/components/dashboard/FaultLocation";
+import PublicWarningPanel from "@/components/dashboard/PublicWarningPanel";
 
 export default function FaultsPage() {
-  const { latestDetection, events, isConnected, lastUpdated } = useGridSentiData();
+  const { latestDetection, events, publicWarnings, isConnected, lastUpdated, refresh } = useGridSentiData();
 
   const detectionObj = latestDetection?.detection;
   const riskObj = latestDetection?.risk;
   const multiclassObj = latestDetection?.faultClassification;
   const localizationObj = latestDetection?.localization;
   const explanationObj = latestDetection?.explanation;
+  const isolationObj = latestDetection?.isolationState;
+  const commStateObj = latestDetection?.communicationState || "REMOTE_CONNECTED";
 
   const isHifActive =
     detectionObj &&
@@ -26,13 +29,13 @@ export default function FaultsPage() {
   const hifReasons = detectionObj?.reasons ?? [];
 
   return (
-    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto">
+    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto font-sans">
       {/* ── Header ────────────────────────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <span>⚡</span> Faults &amp; Anomaly Intelligence Log
+              <span>⚡</span> Faults &amp; Safety Response Intelligence Log
             </h1>
             {isConnected ? (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1.5">
@@ -46,10 +49,10 @@ export default function FaultsPage() {
               </span>
             )}
           </div>
-          <p className="text-slate-400 text-sm mt-1">
-            Multi-class classification, risk scoring &amp; deterministic explanations · GET /api/detection/latest
+          <p className="text-slate-400 text-sm mt-1 font-mono">
+            Multi-class classification, software isolation &amp; public hazard warnings · GET /api/detection/latest
             {lastUpdated && (
-              <span className="text-slate-500 text-xs ml-2 font-mono">
+              <span className="text-slate-500 text-xs ml-2">
                 (Last sync: {lastUpdated})
               </span>
             )}
@@ -57,7 +60,7 @@ export default function FaultsPage() {
         </div>
 
         {/* Localization Disclaimer Banner */}
-        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2.5 text-amber-300 text-xs max-w-md">
+        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2.5 text-amber-300 text-xs max-w-md font-mono">
           <span className="text-base shrink-0">📍</span>
           <span>
             {localizationObj?.disclaimer ?? "Current prototype provides node-level identification, not true multi-point section fault localization."}
@@ -82,11 +85,11 @@ export default function FaultsPage() {
         />
       </div>
 
-      {/* ── Fault Intelligence & Risk Matrix Card ─────────────── */}
+      {/* ── Fault Intelligence & Safety Matrix Card ─────────── */}
       <section className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 space-y-4 font-mono text-xs">
         <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
           <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
-            <span>🧠</span> Multi-Class Fault &amp; Risk Intelligence Output
+            <span>🧠</span> Multi-Class Fault &amp; Safety Response Output
           </h2>
           {latestDetection?.timestamp && (
             <span className="text-slate-400 text-xs font-mono">
@@ -95,14 +98,14 @@ export default function FaultsPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50">
             <span className="text-slate-500 block mb-1">Multi-Class Fault Type</span>
             <span className="text-base font-bold text-cyan-300">
               {multiclassObj?.faultType ?? "Normal"}
             </span>
             <div className="mt-2 text-[11px] text-slate-400">
-              Type Prob: <span className="text-emerald-400 font-bold">{((multiclassObj?.faultTypeProbability ?? 1) * 100).toFixed(1)}%</span>
+              Prob: <span className="text-emerald-400 font-bold">{((multiclassObj?.faultTypeProbability ?? 1) * 100).toFixed(1)}%</span>
             </div>
           </div>
 
@@ -117,12 +120,22 @@ export default function FaultsPage() {
           </div>
 
           <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50">
-            <span className="text-slate-500 block mb-1">Localization Output</span>
-            <span className="text-base font-bold text-cyan-300">
-              {localizationObj?.localizationType ?? "NODE_LEVEL"}
+            <span className="text-slate-500 block mb-1">Communication State</span>
+            <span className={`text-sm font-bold ${commStateObj === "REMOTE_CONNECTED" ? "text-emerald-400" : commStateObj === "LOCAL_FALLBACK" ? "text-amber-400" : "text-slate-400"}`}>
+              {commStateObj}
             </span>
-            <div className="mt-2 text-[11px] text-slate-400 truncate">
-              Node: <span className="text-slate-200 font-bold">{localizationObj?.nodeId ?? hifNodeId}</span>
+            <div className="mt-2 text-[11px] text-slate-400">
+              {commStateObj === "LOCAL_FALLBACK" ? "Local Fallback Active" : "Remote Telemetry"}
+            </div>
+          </div>
+
+          <div className="bg-slate-900/60 p-3.5 rounded-lg border border-slate-700/50">
+            <span className="text-slate-500 block mb-1">Software Isolation</span>
+            <span className={`text-sm font-bold ${isolationObj?.status === "ISOLATED" ? "text-purple-400" : isolationObj?.status === "ISOLATION_RECOMMENDED" ? "text-amber-400" : "text-emerald-400"}`}>
+              {isolationObj?.status ?? "NOT_ISOLATED"}
+            </span>
+            <div className="mt-2 text-[11px] text-slate-400">
+              Software Simulation
             </div>
           </div>
 
@@ -142,18 +155,15 @@ export default function FaultsPage() {
           <p className="text-slate-300 text-xs leading-relaxed">
             {explanationObj?.summary ?? "GridSenti verified nominal operating conditions. DWT energy feature ratios remain stable within steady-state bounds."}
           </p>
-          {explanationObj?.evidence && explanationObj.evidence.length > 0 && (
-            <ul className="mt-2 space-y-1 text-[11px] text-slate-400">
-              {explanationObj.evidence.map((ev: string, idx: number) => (
-                <li key={idx} className="flex items-start gap-1.5">
-                  <span className="text-cyan-400">•</span>
-                  <span>{ev}</span>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       </section>
+
+      {/* ── Public Warning Simulation Panel ───────────── */}
+      <PublicWarningPanel
+        warnings={publicWarnings}
+        activeNodeId={hifNodeId}
+        onRefresh={refresh}
+      />
 
       {/* ── Event Log Timeline ───────────────────────────────── */}
       <EventTimeline events={events} />

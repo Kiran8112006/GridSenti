@@ -15,7 +15,7 @@ export default function NodesPage() {
   const offlineNodes = nodes.filter((n) => n.status === "OFFLINE").length;
 
   return (
-    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto">
+    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto font-sans">
       {/* ── Page Header ──────────────────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
@@ -36,7 +36,7 @@ export default function NodesPage() {
             )}
           </div>
           <p className="text-slate-400 text-sm mt-1">
-            Real-time edge node telemetry, multi-class predictions &amp; risk scores · GET /api/nodes
+            Real-time edge node telemetry, communication resilience, risk &amp; isolation statuses · GET /api/nodes
             {lastUpdated && (
               <span className="text-slate-500 text-xs ml-2 font-mono">
                 (Last sync: {lastUpdated})
@@ -60,8 +60,8 @@ export default function NodesPage() {
       {/* ── Detailed Node Inventory Table ───────────────────── */}
       <section className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
-          <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
-            <span>📋</span> Node Inventory, Risk &amp; Fault Register
+          <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2 font-mono">
+            <span>📋</span> Node Inventory, Resilience &amp; Safety Register
           </h2>
           <span className="text-slate-500 text-xs font-mono">
             Timeout Threshold: {APP_CONFIG.heartbeatTimeoutMs / 1000}s
@@ -69,7 +69,7 @@ export default function NodesPage() {
         </div>
 
         {nodes.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 text-sm">
+          <div className="p-8 text-center text-slate-500 text-sm font-mono">
             {isConnected ? "Awaiting node registration..." : "Backend disconnected. No node data available."}
           </div>
         ) : (
@@ -79,11 +79,11 @@ export default function NodesPage() {
                 <tr>
                   <th className="py-3 px-4">Node ID</th>
                   <th className="py-3 px-4">Location / Feeder</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Predicted Fault Type</th>
-                  <th className="py-3 px-4">Risk Level &amp; Score</th>
-                  <th className="py-3 px-4">Persistence</th>
-                  <th className="py-3 px-4">Recommended Action</th>
+                  <th className="py-3 px-4">Node Status</th>
+                  <th className="py-3 px-4">Communication State</th>
+                  <th className="py-3 px-4">Isolation State</th>
+                  <th className="py-3 px-4">Predicted Fault</th>
+                  <th className="py-3 px-4">Risk &amp; Score</th>
                   <th className="py-3 px-4">Last Heartbeat</th>
                 </tr>
               </thead>
@@ -118,6 +118,32 @@ export default function NodesPage() {
                         {node.status}
                       </span>
                     </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`font-bold ${
+                          node.communicationState === "REMOTE_CONNECTED"
+                            ? "text-emerald-400"
+                            : node.communicationState === "LOCAL_FALLBACK"
+                              ? "text-amber-400"
+                              : "text-slate-500"
+                        }`}
+                      >
+                        {node.communicationState ?? "REMOTE_CONNECTED"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`font-bold ${
+                          node.isolationState?.status === "ISOLATED"
+                            ? "text-purple-400"
+                            : node.isolationState?.status === "ISOLATION_RECOMMENDED"
+                              ? "text-amber-400"
+                              : "text-emerald-400"
+                        }`}
+                      >
+                        {node.isolationState?.status ?? "NOT_ISOLATED"}
+                      </span>
+                    </td>
                     <td className="py-3 px-4 font-bold text-cyan-300">
                       {node.faultClassification?.faultType ?? (node.lastDetection === "HIF" ? "HIF" : "Normal")}
                     </td>
@@ -133,12 +159,6 @@ export default function NodesPage() {
                       >
                         {node.risk?.level ?? "LOW"} ({node.risk?.score ?? 0}/100)
                       </span>
-                    </td>
-                    <td className="py-3 px-4 font-bold text-amber-300">
-                      {node.risk?.persistenceCount ?? 0} pkts
-                    </td>
-                    <td className="py-3 px-4 text-slate-400 max-w-xs truncate">
-                      {node.risk?.recommendedAction ?? "CONTINUE_MONITORING"}
                     </td>
                     <td className="py-3 px-4 text-slate-400">
                       {node.lastHeartbeat ? timeAgo(node.lastHeartbeat) : "Never"}

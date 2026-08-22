@@ -4,6 +4,10 @@
 
 export type NodeStatus = "ONLINE" | "WARNING" | "OFFLINE" | "UNKNOWN";
 
+export type CommunicationState = "REMOTE_CONNECTED" | "LOCAL_FALLBACK" | "REMOTE_UNAVAILABLE";
+
+export type IsolationStatusType = "NOT_ISOLATED" | "ISOLATION_RECOMMENDED" | "ISOLATED";
+
 export type FaultStatus =
   | "NORMAL"
   | "POSSIBLE_HIF"
@@ -57,6 +61,31 @@ export interface ExplanationInfo {
   recommendedAction: string;
 }
 
+// ── Software Isolation Info ──────────────────────────────────
+
+export interface IsolationInfo {
+  nodeId: string;
+  status: IsolationStatusType;
+  simulated: boolean;
+  timestamp: string;
+  message: string;
+}
+
+// ── Public Safety Warning Info ───────────────────────────────
+
+export interface PublicWarning {
+  warningId: string;
+  nodeId: string;
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  location: string;
+  timestamp: string;
+  simulated: boolean;
+  status: "ACTIVE" | "RESOLVED";
+  resolvedAt?: string | null;
+}
+
 // ── Monitoring Node ──────────────────────────────────────────
 
 export interface MonitoringNode {
@@ -68,6 +97,7 @@ export interface MonitoringNode {
   latitude?: number;
   longitude?: number;
   status: NodeStatus;
+  communicationState?: CommunicationState;
   lastHeartbeat?: string | null;
   lastDetection?: string | null;
   latestTelemetry?: any;
@@ -76,6 +106,8 @@ export interface MonitoringNode {
   risk?: RiskAnalysis | null;
   localization?: LocalizationInfo | null;
   explanation?: ExplanationInfo | null;
+  isolationState?: IsolationInfo | null;
+  activeWarning?: PublicWarning | null;
   firmwareVersion?: string;
 }
 
@@ -156,6 +188,8 @@ export interface Alert {
   riskLevel?: string;
   riskScore?: number;
   recommendedAction?: string;
+  isolationStatus?: string;
+  publicWarningId?: string;
 }
 
 // ── Event Timeline Log Item ──────────────────────────────────
@@ -166,6 +200,7 @@ export interface EventLogItem {
   nodeId: string | null;
   type: string;
   message: string;
+  simulated?: boolean;
   details?: any;
 }
 

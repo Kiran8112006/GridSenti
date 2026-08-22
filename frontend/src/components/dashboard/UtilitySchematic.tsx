@@ -26,6 +26,7 @@ export default function UtilitySchematic({ nodes }: UtilitySchematicProps) {
 
   const getNodeColor = (node: MonitoringNode | undefined) => {
     if (!node || node.status === "OFFLINE") return "bg-slate-700 text-slate-400 border-slate-600";
+    if (node.isolationState?.status === "ISOLATED") return "bg-slate-900 text-purple-400 border-purple-500 ring-2 ring-purple-500";
     const riskLevel = node.risk?.level;
     if (riskLevel === "CRITICAL" || node.lastDetection === "HIF") return "bg-red-950 text-red-400 border-red-500 animate-pulse";
     if (riskLevel === "MEDIUM" || node.status === "WARNING") return "bg-amber-950 text-amber-400 border-amber-500";
@@ -34,6 +35,7 @@ export default function UtilitySchematic({ nodes }: UtilitySchematicProps) {
 
   const getNodeDot = (node: MonitoringNode | undefined) => {
     if (!node || node.status === "OFFLINE") return "bg-slate-500";
+    if (node.isolationState?.status === "ISOLATED") return "bg-purple-400";
     const riskLevel = node.risk?.level;
     if (riskLevel === "CRITICAL" || node.lastDetection === "HIF") return "bg-red-400";
     if (riskLevel === "MEDIUM" || node.status === "WARNING") return "bg-amber-400";
@@ -52,10 +54,11 @@ export default function UtilitySchematic({ nodes }: UtilitySchematicProps) {
             FEEDER LINE A-D
           </span>
         </div>
-        <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400">
+        <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400 flex-wrap">
           <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400" /> NORMAL</span>
           <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" /> SUSPICIOUS</span>
           <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" /> CRITICAL</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-purple-400" /> ISOLATED (SIM)</span>
           <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-500" /> OFFLINE</span>
         </div>
       </div>
@@ -113,7 +116,7 @@ export default function UtilitySchematic({ nodes }: UtilitySchematicProps) {
       {/* Selected Node Details Drawer */}
       {selectedNode && (
         <div className="bg-slate-900/60 border border-slate-700/60 rounded-xl p-4 space-y-3 font-mono text-xs animate-fadeIn">
-          <div className="flex items-center justify-between border-b border-slate-700/50 pb-2">
+          <div className="flex items-center justify-between border-b border-slate-700/50 pb-2 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <span className="text-cyan-300 font-bold text-sm">
                 {selectedNode.nodeId || selectedNode.id}
@@ -134,18 +137,25 @@ export default function UtilitySchematic({ nodes }: UtilitySchematicProps) {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-slate-300 text-[11px]">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-slate-300 text-[11px]">
             <div className="bg-slate-800/80 p-2.5 rounded border border-slate-700/40">
-              <span className="text-slate-500 block text-[10px] uppercase">Status</span>
+              <span className="text-slate-500 block text-[10px] uppercase">Node Status</span>
               <span className={`font-bold ${selectedNode.status === "ONLINE" ? "text-emerald-400" : selectedNode.status === "WARNING" ? "text-amber-400" : "text-slate-500"}`}>
                 {selectedNode.status}
               </span>
             </div>
 
             <div className="bg-slate-800/80 p-2.5 rounded border border-slate-700/40">
-              <span className="text-slate-500 block text-[10px] uppercase">Predicted Fault Type</span>
-              <span className="font-bold text-cyan-300">
-                {selectedNode.faultClassification?.faultType ?? "Normal"}
+              <span className="text-slate-500 block text-[10px] uppercase">Communication State</span>
+              <span className={`font-bold ${selectedNode.communicationState === "REMOTE_CONNECTED" ? "text-emerald-400" : selectedNode.communicationState === "LOCAL_FALLBACK" ? "text-amber-400" : "text-slate-500"}`}>
+                {selectedNode.communicationState ?? "REMOTE_CONNECTED"}
+              </span>
+            </div>
+
+            <div className="bg-slate-800/80 p-2.5 rounded border border-slate-700/40">
+              <span className="text-slate-500 block text-[10px] uppercase">Isolation State</span>
+              <span className={`font-bold ${selectedNode.isolationState?.status === "ISOLATED" ? "text-purple-400" : selectedNode.isolationState?.status === "ISOLATION_RECOMMENDED" ? "text-amber-400" : "text-emerald-400"}`}>
+                {selectedNode.isolationState?.status ?? "NOT_ISOLATED"}
               </span>
             </div>
 
@@ -157,9 +167,9 @@ export default function UtilitySchematic({ nodes }: UtilitySchematicProps) {
             </div>
 
             <div className="bg-slate-800/80 p-2.5 rounded border border-slate-700/40">
-              <span className="text-slate-500 block text-[10px] uppercase">Packet Persistence</span>
-              <span className="font-bold text-amber-300">
-                {selectedNode.risk?.persistenceCount ?? 0} packet(s)
+              <span className="text-slate-500 block text-[10px] uppercase">Predicted Fault</span>
+              <span className="font-bold text-cyan-300">
+                {selectedNode.faultClassification?.faultType ?? "Normal"}
               </span>
             </div>
           </div>

@@ -2,24 +2,25 @@
 
 import AlertPanel from "@/components/alerts/AlertPanel";
 import StatusCard from "@/components/dashboard/StatusCard";
+import PublicWarningPanel from "@/components/dashboard/PublicWarningPanel";
 import { useGridSentiData } from "@/hooks/useGridSentiData";
 import { timeAgo } from "@/utils";
 
 export default function AlertsPage() {
-  const { alerts, isConnected, lastUpdated } = useGridSentiData();
+  const { alerts, publicWarnings, isConnected, lastUpdated, refresh } = useGridSentiData();
 
   const criticalCount = alerts.filter((a) => a.severity === "CRITICAL").length;
   const warningCount = alerts.filter((a) => a.severity === "WARNING").length;
   const infoCount = alerts.filter((a) => a.severity === "INFO").length;
 
   return (
-    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto">
+    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto font-sans">
       {/* ── Page Header ──────────────────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <span>🔔</span> Active Grid Emergency Alerts
+              <span>🔔</span> Active Grid Emergency Alerts &amp; Safety Response
             </h1>
             {isConnected ? (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1.5">
@@ -33,8 +34,8 @@ export default function AlertsPage() {
               </span>
             )}
           </div>
-          <p className="text-slate-400 text-sm mt-1">
-            Real-time emergency warning, risk level &amp; action recommendation register · GET /api/alerts
+          <p className="text-slate-400 text-sm mt-1 font-mono">
+            Real-time emergency warning, isolation recommendations &amp; public safety notifications · GET /api/alerts
             {lastUpdated && (
               <span className="text-slate-500 text-xs ml-2 font-mono">
                 (Last sync: {lastUpdated})
@@ -52,12 +53,19 @@ export default function AlertsPage() {
         <StatusCard title="Info Events" value={infoCount} status="neutral" icon="🔵" />
       </div>
 
+      {/* ── Public Hazard Warning Panel ─────────────────────── */}
+      <PublicWarningPanel
+        warnings={publicWarnings}
+        activeNodeId="GS-NODE-001"
+        onRefresh={refresh}
+      />
+
       {/* ── Alert List Panel ─────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AlertPanel alerts={alerts} />
 
         {/* Detailed Alert Summary Card */}
-        <section className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 space-y-4">
+        <section className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 space-y-4 font-mono text-xs">
           <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2 border-b border-slate-700/60 pb-3">
             <span>🛡</span> Safety Protocol Guidelines
           </h2>
@@ -68,7 +76,7 @@ export default function AlertsPage() {
                 <span>🔴</span> CRITICAL RISK PROTOCOL (Score 70-100)
               </p>
               <p className="text-slate-300 leading-relaxed">
-                Persistent HIF or high-risk line fault confirmed. Despatch field crew for visual inspection immediately. Do NOT approach suspected site. Action: UTILITY_ALERT_AND_ISOLATION_RECOMMENDATION.
+                Persistent HIF or high-risk line fault confirmed. Despatch field crew for visual inspection immediately. Action: UTILITY_ALERT_AND_ISOLATION_RECOMMENDATION.
               </p>
             </div>
 
@@ -82,7 +90,7 @@ export default function AlertsPage() {
             </div>
 
             <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-700/50 text-slate-400 text-[11px]">
-              Note: Prototype warning system based on simulated research telemetry. Does NOT implement physical relay isolation.
+              Note: Software simulation prototype. Does NOT control physical relay hardware or real-world emergency broadcast services.
             </div>
           </div>
         </section>
@@ -91,7 +99,7 @@ export default function AlertsPage() {
       {/* ── Detailed Alerts Table ─────────────────────────────── */}
       <section className="bg-slate-800/60 border border-slate-700/60 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-700/60 flex items-center justify-between">
-          <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-slate-200 text-sm font-semibold uppercase tracking-wider flex items-center gap-2 font-mono">
             <span>📊</span> Active Emergency Alerts Detailed Register
           </h2>
           <span className="text-slate-500 text-xs font-mono">
@@ -100,7 +108,7 @@ export default function AlertsPage() {
         </div>
 
         {alerts.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 text-sm">
+          <div className="p-8 text-center text-slate-500 text-sm font-mono">
             {isConnected ? "✓ No active alerts. All grid nodes operating normally." : "Backend disconnected."}
           </div>
         ) : (
@@ -110,10 +118,10 @@ export default function AlertsPage() {
                 <tr>
                   <th className="py-3 px-4">Severity</th>
                   <th className="py-3 px-4">Fault Type</th>
-                  <th className="py-3 px-4">Risk Level &amp; Score</th>
+                  <th className="py-3 px-4">Risk &amp; Score</th>
                   <th className="py-3 px-4">Node ID</th>
+                  <th className="py-3 px-4">Isolation Status</th>
                   <th className="py-3 px-4">Recommended Action</th>
-                  <th className="py-3 px-4">Message</th>
                   <th className="py-3 px-4">Timestamp</th>
                 </tr>
               </thead>
@@ -138,8 +146,12 @@ export default function AlertsPage() {
                       {a.riskLevel ?? a.severity} ({a.riskScore ?? 0}/100)
                     </td>
                     <td className="py-3 px-4 text-cyan-300 font-bold">{a.nodeId}</td>
+                    <td className="py-3 px-4">
+                      <span className={`font-bold ${a.isolationStatus === "ISOLATED" ? "text-purple-400" : "text-amber-400"}`}>
+                        {a.isolationStatus ?? "ISOLATION_RECOMMENDED"}
+                      </span>
+                    </td>
                     <td className="py-3 px-4 text-slate-400 max-w-xs truncate">{a.recommendedAction ?? "UTILITY_ALERT"}</td>
-                    <td className="py-3 px-4 text-slate-300 max-w-sm truncate">{a.message}</td>
                     <td className="py-3 px-4 text-slate-400">{timeAgo(a.timestamp)}</td>
                   </tr>
                 ))}

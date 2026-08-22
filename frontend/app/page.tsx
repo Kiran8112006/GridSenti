@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import StatusCard from "@/components/dashboard/StatusCard";
 import NodeGrid from "@/components/nodes/NodeGrid";
 import AlertPanel from "@/components/alerts/AlertPanel";
@@ -8,14 +9,27 @@ import FaultLocation from "@/components/dashboard/FaultLocation";
 import EventTimeline from "@/components/dashboard/EventTimeline";
 import SystemHealth from "@/components/dashboard/SystemHealth";
 import UtilitySchematic from "@/components/dashboard/UtilitySchematic";
+import PublicWarningPanel from "@/components/dashboard/PublicWarningPanel";
+import SimulateIsolationModal from "@/components/dashboard/SimulateIsolationModal";
 
 import { useGridSentiData } from "@/hooks/useGridSentiData";
+import { simulateIsolation, resetIsolation } from "@/services/isolation.service";
 import { APP_CONFIG } from "@/config/app.config";
-import type { TelemetryPacket, SystemStatus } from "@/types";
+import type { SystemStatus } from "@/types";
 
 export default function DashboardPage() {
-  const { nodes, alerts, events, latestDetection, isConnected, lastUpdated } =
-    useGridSentiData();
+  const {
+    nodes,
+    alerts,
+    events,
+    latestDetection,
+    publicWarnings,
+    isConnected,
+    lastUpdated,
+    refresh,
+  } = useGridSentiData();
+
+  const [isIsolationModalOpen, setIsIsolationModalOpen] = useState(false);
 
   // Compute live system metrics
   const totalNodes = nodes.length;
@@ -44,6 +58,8 @@ export default function DashboardPage() {
   const riskObj = latestDetection?.risk;
   const multiclassObj = latestDetection?.faultClassification;
   const explanationObj = latestDetection?.explanation;
+  const isolationObj = latestDetection?.isolationState;
+  const commStateObj = latestDetection?.communicationState || "REMOTE_CONNECTED";
 
   const isHifActive =
     detectionObj &&
@@ -56,12 +72,22 @@ export default function DashboardPage() {
   const hifRuleScore = detectionObj?.rule_score ?? null;
   const hifReasons = detectionObj?.reasons ?? [];
 
+  const handleSimulateIsolationConfirm = async () => {
+    await simulateIsolation(hifNodeId);
+    await refresh();
+  };
+
+  const handleResetIsolation = async () => {
+    await resetIsolation(hifNodeId);
+    await refresh();
+  };
+
   return (
-    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto">
+    <div className="p-6 space-y-8 max-w-screen-2xl mx-auto font-sans">
       {/* ── Page header ──────────────────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold text-white tracking-tight">
               Grid Operations Center
             </h1>
@@ -78,7 +104,7 @@ export default function DashboardPage() {
             )}
           </div>
           <p className="text-slate-400 text-sm mt-1">
-            High-Impedance Fault Detection &amp; Risk Intelligence · Prototype v0.1.0
+            High-Impedance Fault Detection, Safety Response &amp; Isolation Simulation · v0.2.0
             {lastUpdated && (
               <span className="text-slate-500 text-xs ml-2 font-mono">
                 (Last sync: {lastUpdated})
@@ -92,10 +118,10 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2.5 bg-cyan-950/40 border border-cyan-500/30 rounded-lg px-4 py-2.5 text-cyan-300 text-xs max-w-md shadow-sm">
             <span className="text-base shrink-0">📡</span>
             <div>
-              <p className="font-semibold text-cyan-200">
-                LIVE SIMULATED EDGE TELEMETRY
+              <p className="font-semibold text-cyan-200 uppercase font-mono">
+                LIVE EDGE TELEMETRY STREAM
               </p>
-              <p className="text-cyan-400/80 text-[11px] mt-0.5">
+              <p className="text-cyan-400/80 text-[11px] mt-0.5 font-mono">
                 ESP8266 replaying Mendeley HIF Dataset (DOI: 10.17632/rvypj5rs5b.1).
               </p>
             </div>
@@ -104,10 +130,10 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2.5 bg-red-950/60 border border-red-500/50 rounded-lg px-4 py-2.5 text-red-200 text-xs max-w-md shadow-sm">
             <span className="text-base shrink-0">⚠️</span>
             <div>
-              <p className="font-semibold text-red-300">
+              <p className="font-semibold text-red-300 font-mono uppercase">
                 BACKEND DISCONNECTED — STALE DATA
               </p>
-              <p className="text-red-400/80 text-[11px] mt-0.5">
+              <p className="text-red-400/80 text-[11px] mt-0.5 font-mono">
                 Cannot reach FastAPI at {APP_CONFIG.api.baseUrl}. Ensure backend server is running.
               </p>
             </div>
@@ -117,13 +143,8 @@ export default function DashboardPage() {
 
       {/* ── Overall Grid Status cards ────────────────────────── */}
       <section>
-        <h2 className="text-slate-300 text-sm font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h2 className="text-slate-300 text-sm font-semibold uppercase tracking-wider mb-3 flex items-center gap-2 font-mono">
           <span>⬡</span> Overall Grid Status
-          {!isConnected && (
-            <span className="text-red-400 text-xs font-mono font-normal">
-              [STALE DATA]
-            </span>
-          )}
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatusCard title="Total Nodes" value={totalNodes} status="neutral" icon="◉" />
@@ -133,9 +154,9 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ── Risk & Fault Intelligence Cards ──────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Risk Card */}
+      {/* ── Batch 2 Safety Response & Risk Intelligence Cards ─── */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* System Risk Score */}
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-slate-400 uppercase font-bold text-[11px]">System Risk Score</span>
@@ -161,7 +182,6 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          {/* Score progress bar */}
           <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
@@ -180,7 +200,7 @@ export default function DashboardPage() {
           </span>
         </div>
 
-        {/* Multi-Class Fault Type Card */}
+        {/* Multi-Class Fault Type */}
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-3">
           <span className="text-slate-400 uppercase font-bold text-[11px] block">Predicted Fault Type</span>
           <div className="flex items-baseline justify-between">
@@ -196,16 +216,71 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Why was this flagged? Explanation Summary Card */}
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-2">
-          <span className="text-slate-400 uppercase font-bold text-[11px] flex items-center gap-1.5">
-            <span>💡</span> Why Was This Flagged?
-          </span>
-          <p className="text-slate-300 text-[11px] leading-relaxed line-clamp-3">
-            {explanationObj?.summary ?? "GridSenti verified nominal operating conditions. DWT energy feature ratios remain stable within steady-state bounds."}
+        {/* Communication State */}
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-3">
+          <span className="text-slate-400 uppercase font-bold text-[11px] block">Communication State</span>
+          <div className="flex items-center gap-2">
+            <span className={`w-3 h-3 rounded-full ${commStateObj === "REMOTE_CONNECTED" ? "bg-emerald-400" : commStateObj === "LOCAL_FALLBACK" ? "bg-amber-400 animate-pulse" : "bg-slate-500"}`} />
+            <span className={`text-base font-bold ${commStateObj === "REMOTE_CONNECTED" ? "text-emerald-400" : commStateObj === "LOCAL_FALLBACK" ? "text-amber-400" : "text-slate-400"}`}>
+              {commStateObj === "REMOTE_CONNECTED" ? "REMOTE CONNECTED" : commStateObj === "LOCAL_FALLBACK" ? "LOCAL FALLBACK" : "UNAVAILABLE"}
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-400">
+            {commStateObj === "LOCAL_FALLBACK"
+              ? "ESP8266 local fallback anomaly detection active."
+              : "ESP8266 transmitting telemetry to FastAPI."}
           </p>
         </div>
+
+        {/* Safe Isolation Simulation Card */}
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 font-mono text-xs space-y-3 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-slate-400 uppercase font-bold text-[11px]">Software Isolation</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] bg-slate-900 text-purple-400 border border-purple-800">
+                SIMULATION
+              </span>
+            </div>
+
+            <span className={`text-sm font-bold block ${isolationObj?.status === "ISOLATED" ? "text-purple-400" : isolationObj?.status === "ISOLATION_RECOMMENDED" ? "text-amber-400" : "text-emerald-400"}`}>
+              {isolationObj?.status === "ISOLATED"
+                ? "🔴 SECTION ISOLATED (SIM)"
+                : isolationObj?.status === "ISOLATION_RECOMMENDED"
+                  ? "🟡 ISOLATION RECOMMENDED"
+                  : "🟢 NOT ISOLATED"}
+            </span>
+          </div>
+
+          <div>
+            {isolationObj?.status === "ISOLATED" ? (
+              <button
+                onClick={handleResetIsolation}
+                className="w-full py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold transition-all"
+              >
+                [ RESET ISOLATION ]
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsIsolationModalOpen(true)}
+                className={`w-full py-1.5 rounded text-[11px] font-bold transition-all border ${
+                  riskObj?.level === "CRITICAL"
+                    ? "bg-red-600 hover:bg-red-500 text-white border-red-500 shadow-md shadow-red-600/20"
+                    : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                }`}
+              >
+                [ SIMULATE ISOLATION ]
+              </button>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* ── Public Hazard Warning Simulation Panel ───────────── */}
+      <PublicWarningPanel
+        warnings={publicWarnings}
+        activeNodeId={hifNodeId}
+        onRefresh={refresh}
+      />
 
       {/* ── Feeder Topology Schematic ───────────────────────── */}
       <UtilitySchematic nodes={nodes} />
@@ -242,6 +317,14 @@ export default function DashboardPage() {
 
       {/* ── Recent Events timeline ───────────────────────────── */}
       <EventTimeline events={events} />
+
+      {/* ── Simulate Isolation Confirmation Modal ────────────── */}
+      <SimulateIsolationModal
+        isOpen={isIsolationModalOpen}
+        nodeId={hifNodeId}
+        onClose={() => setIsIsolationModalOpen(false)}
+        onConfirm={handleSimulateIsolationConfirm}
+      />
     </div>
   );
 }
