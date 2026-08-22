@@ -1,0 +1,15 @@
+EA
+EB
+EC
+total_energy
+mean_energy
+max_energy
+min_energy
+energy_spread
+energy_imbalance
+log_EA
+log_EB
+log_EC
+log_ratio_EA_EB
+log_ratio_EA_EC
+log_ratio_EB_EC

@@ -1,0 +1,18 @@
+# Install with: pip install --prefer-binary -r requirements.txt
+# (Required for Python 3.14 — pydantic-core needs pre-built binary wheel)
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+httpx
+
+# ── Future dependencies (do NOT install yet) ─────────────────
+# sqlalchemy==2.x
+# asyncpg==x.x  (PostgreSQL)
+# influxdb-client==x.x  (time-series)
+# firebase-admin==x.x
+# paho-mqtt==x.x
+# scikit-learn==x.x
+# numpy==x.x
+# scipy==x.x

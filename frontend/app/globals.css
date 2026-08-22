@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/* ── GridSenti design tokens ───────────────────────────────────────
+   "Daylight control room" — light instrumentation theme.
+   Named after the equipment these values model, not decoration. */
+@theme {
+  --color-paper: #f4f6f7; /* page ground — painted panel steel */
+  --color-panel: #ffffff; /* card / instrument bezel surface */
+  --color-ink: #12181d; /* primary text — graphite */
+  --color-steel: #404c54; /* secondary text / labels — darkened for legibility */
+  --color-steel-light: #626e77; /* tertiary meta text — still AA-legible */
+  --color-line: #dde3e6; /* hairline border */
+  --color-line-strong: #c6ced2; /* emphasis border */
+
+  --color-signal: #0a4e8a; /* instrument-blue accent */
+  --color-signal-light: #e8f0f9;
+
+  --color-nominal: #106140; /* safe / online */
+  --color-nominal-light: #e4f3ea;
+
+  --color-warning: #8c5a0a; /* hazard amber */
+  --color-warning-light: #f8ecd6;
+
+  --color-critical: #a01f18; /* fault red */
+  --color-critical-light: #fbe7e5;
+
+  --color-offline: #6b757c; /* inactive gray */
+  --color-offline-light: #eef1f2;
+
+  --color-isolation: #5b3a8a; /* software-isolation violet — distinct from fault reds */
+  --color-isolation-light: #ece5f5;
+
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+
+  --font-display: var(--font-plex-condensed, "IBM Plex Sans Condensed", sans-serif);
+  --font-sans: var(--font-inter, system-ui, sans-serif);
+  --font-mono: var(--font-mono, "JetBrains Mono", monospace);
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+html,
+body {
+  height: 100%;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Faint engineering-grid ground — a literal, quiet nod to "Grid" */
+body {
+  background-image:
+    linear-gradient(rgba(18, 24, 29, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 24, 29, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* All instrument-style data readouts share tabular alignment */
+.meter {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-paper);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-steel-light);
+}
+
+/* ── Selection ─────────────────────────────────────────────── */
+::selection {
+  background: rgba(11, 95, 168, 0.16);
+  color: var(--color-ink);
+}
+
+/* ── Focus visible ─────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
